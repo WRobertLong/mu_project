@@ -5,6 +5,11 @@ import csv
 from db import load_database_config, upload_urls_from_file, clear_all_urls, insert_url, get_all_urls, get_domains
 
 class URLManagerGUI(tk.Tk):
+    """
+    A graphical user interface for managing URLs and domain data.
+    Allows for the selection of files, uploading of URLs from a file,
+    insertion of individual URLs, and exporting URLs to a CSV file.
+    """
     def __init__(self):
         super().__init__()
         self.title("URL Manager")
@@ -62,11 +67,17 @@ class URLManagerGUI(tk.Tk):
         self.selected_file = ''
 
     def select_file(self):
+        """
+        Open a file dialog to select a file, and update the label to show the selected file's name.
+        """
         self.selected_file = filedialog.askopenfilename(title="Select a file", filetypes=(("Text files", "*.txt"), ("All files", "*.*")))
         if self.selected_file:
             self.label_file.config(text=f"Selected File: {self.selected_file.split('/')[-1]}")
 
     def bulk_upload(self):
+        """
+        Upload multiple URLs from the selected file to the database, under the selected domain.
+        """
         domain = self.entry_domain.get()
         if self.selected_file and domain:
             count = upload_urls_from_file(self.db_config, self.selected_file, domain)
@@ -75,6 +86,9 @@ class URLManagerGUI(tk.Tk):
             messagebox.showwarning("Missing Information", "Please select a file and enter a domain.")
 
     def upload_single_url(self):
+        """
+        Upload a single URL, entered in the text entry field, to the database under the selected domain.
+        """
         url = self.entry_url.get()
         domain = self.entry_domain.get()
         if not url:
@@ -92,10 +106,16 @@ class URLManagerGUI(tk.Tk):
             messagebox.showerror("Error", f"Failed to upload URL: {e}")
 
     def clear_urls(self):
+        """
+        Clear all URLs from the database.
+        """
         clear_all_urls(self.db_config)
         messagebox.showinfo("Clear URLs", "All URLs have been deleted from the database.")
 
     def export_to_csv(self):
+        """
+        Export URLs from the database, filtered by the selected domain, to a CSV file.
+        """
         domain = self.domain_var.get()
         filename = self.entry_filename.get().strip()
         if not filename:
