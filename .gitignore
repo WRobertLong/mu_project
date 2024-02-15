@@ -1,0 +1,10 @@
+# Ignore everything
+*
+
+# But not these files...
+!.gitignore
+!mu_project_01.py
+!db.py
+!gui.py
+!Requirements.txt
+
