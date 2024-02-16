@@ -1,8 +1,10 @@
 # gui.py
 import tkinter as tk
 from tkinter import filedialog, messagebox
+from tkinter.scrolledtext import ScrolledText  # For a scrollable read-only text box
 import csv
 from db import load_database_config, upload_urls_from_file, clear_all_urls, insert_url, get_all_urls, get_domains
+from vpn_manager import get_vpn_status
 
 class URLManagerGUI(tk.Tk):
     """
@@ -65,6 +67,14 @@ class URLManagerGUI(tk.Tk):
         self.button_export_csv.pack(pady=(10, 0))
 
         self.selected_file = ''
+
+        # Button for checking VPN status
+        self.button_check_vpn = tk.Button(self, text="Check VPN Status", command=self.check_vpn_status)
+        self.button_check_vpn.pack(pady=(10, 5))
+        
+        # Read-Only Text Box for displaying VPN status
+        self.text_vpn_status = ScrolledText(self, wrap=tk.WORD, width=40, height=10, state='disabled')
+        self.text_vpn_status.pack(pady=(5, 10))
 
     def select_file(self):
         """
@@ -135,3 +145,13 @@ class URLManagerGUI(tk.Tk):
             messagebox.showinfo("Export Successful", f"URLs exported to {filename}.")
         except Exception as e:
             messagebox.showerror("Export Failed", f"An error occurred: {e}")
+
+    def check_vpn_status(self):
+        """
+        Fetch VPN status and update the read-only text box.
+        """
+        status = get_vpn_status()  # This function should return the VPN status as a string
+        self.text_vpn_status.config(state='normal')  # Temporarily enable the widget to update text
+        self.text_vpn_status.delete('1.0', tk.END)  # Clear existing content
+        self.text_vpn_status.insert(tk.END, status)  # Insert the fetched status
+        self.text_vpn_status.config(state='disabled')  # Disable the widget again to make it read-only

@@ -12,65 +12,12 @@ import sys
 import os
 import random
 import time
-from nordvpn_connect import initialize_vpn, rotate_VPN, close_vpn_connection, get_current_ip
+import vpn_manager
 from db import load_database_config,  get_browsers, get_all_urls
 
 db_config = load_database_config()
 browsers = get_browsers(db_config)
 print("Current working directory:", os.getcwd())
-
-
-def check_vpn_status():
-    """
-    Check the current VPN connection status by verifying the IP address.
-
-    Returns:
-        bool: True if the VPN is likely connected (IP not in the normal range), False otherwise.
-    """
-
-    try:
-        current_ip = get_current_ip()
-        if not current_ip.startswith("176.27"):
-            print(f"VPN is very likely connected. Current IP: {current_ip}")
-            return True
-        else:
-            print("VPN is not connected or Current IP is in the normal range.")
-            return False
-    except Exception as e:
-        print(f"Error checking VPN status: {e}")
-        return False
-
-def connect_vpn(selected_browser):
-    """
-    Establish a VPN connection using the selected browser's VPN settings.
-
-    Attempts to connect to the VPN server associated with the selected browser.
-    Retries up to 5 times if the initial connection attempt fails.
-
-    Args:
-        selected_browser (str): The browser name as selected by the user.
-
-    Exits:
-        The program exits if the VPN connection fails after multiple attempts.
-    """
-
-    server_code = browsers[selected_browser]["vpn"]
-    settings = initialize_vpn(server_code)
-    rotate_VPN(settings)
-    
-    if check_vpn_status():
-        print(f"Successfully connected to VPN server {server_code}.")
-    else:
-        print(f"Attempting to connect to VPN server {server_code}...")
-        for _ in range(5):
-            rotate_VPN(settings)
-            if check_vpn_status():
-                print(f"Successfully connected to VPN server {server_code}.")
-                return
-            print("Retrying...")
-        print("Failed to connect to VPN after multiple attempts. Exiting.")
-        close_vpn_connection(settings)
-        sys.exit(1)
 
 def select_browser():
     """
@@ -160,7 +107,7 @@ if __name__ == "__main__":
         output_line_multiple = int(sys.argv[3])
 
         selected_browser = select_browser()
-        connect_vpn(selected_browser)  # Use the selected browser's VPN settings
+        vpn_manager.connect_vpn(selected_browser, browsers)  # Use the selected browser's VPN settings
 
         print("Processing URLs...")
         final_urls = process_urls(db_config, modify_line_multiple, output_line_multiple)
