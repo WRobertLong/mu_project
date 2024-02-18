@@ -17,7 +17,7 @@ from db import load_database_config,  get_browsers, get_all_urls
 
 db_config = load_database_config()
 browsers = get_browsers(db_config)
-print("Current working directory:", os.getcwd())
+# print("Current working directory:", os.getcwd())
 
 def select_browser():
     """
@@ -44,7 +44,7 @@ def select_browser():
         print("Invalid selection.")
         sys.exit(1)
 
-def process_urls(db_config, modify_line_multiple, output_line_multiple, starting_point=1):
+def process_urls_old(db_config, modify_line_multiple, output_line_multiple, starting_point=1):
     """
     Process a list of URLs from the database, applying modification and output conditions.
 
@@ -100,6 +100,8 @@ if __name__ == "__main__":
     if len(sys.argv) == 2 and sys.argv[1].lower() == "gui":
         app = URLManagerGUI()
         app.mainloop()
+
+        
     # Proceed with the original CLI functionality if the correct number of arguments are provided
     elif len(sys.argv) == 4:
         filename = sys.argv[1]

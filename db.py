@@ -124,18 +124,10 @@ def clear_all_urls(db_config):
             conn.close()
 
 def get_domains(db_config):
-    """
-    Retrieve all domains from the database, identifying the default one.
-
-    Args:
-        db_config (dict): Database configuration parameters.
-
-    Returns:
-        tuple: A tuple containing a list of domains and the default domain.
-    """
+   
     conn = mysql.connector.connect(**db_config)
     cursor = conn.cursor()
-    cursor.execute("SELECT domain, `default` FROM domains")
+    cursor.execute("SELECT domain, default_domain FROM domains")
     domains = cursor.fetchall()
     
     default_domain = None
@@ -149,3 +141,30 @@ def get_domains(db_config):
     conn.close()
     
     return domain_list, default_domain
+
+def insert_into_urls_opened(db_config, url_id):
+    """
+    Insert a row into the urls_opened table.
+
+    Args:
+        db_config (dict): Database configuration parameters.
+        url_id (int): the URL ID to be inserted.
+
+    Returns:
+        boolean: True if the insertion was successful, False if unsuccessful.
+    """
+    try:
+        conn = mysql.connector.connect(**db_config)
+        cursor = conn.cursor()
+        # Use placeholders for safe query construction
+        query = "INSERT INTO urls_opened (url_id, time_opened) VALUES (%s, NOW());"
+        cursor.execute(query, (url_id,))
+        conn.commit()  # Commit the transaction to save changes
+        return True
+    except mysql.connector.Error as e:
+        print(f"Error inserting URL into urls_opened: {e}")
+        return False
+    finally:
+        if conn.is_connected():
+            cursor.close()
+            conn.close()

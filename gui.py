@@ -15,7 +15,7 @@ class URLManagerGUI(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("URL Manager")
-        self.geometry("500x600")
+        self.geometry("500x1100")
 
         self.db_config = load_database_config()
         domain_options, default_domain = get_domains(self.db_config)
@@ -69,12 +69,24 @@ class URLManagerGUI(tk.Tk):
         self.selected_file = ''
 
         # Button for checking VPN status
-        self.button_check_vpn = tk.Button(self, text="Check VPN Status", command=self.check_vpn_status)
+        self.button_check_vpn = tk.Button(self, text="Check VPN Status", command=self.update_vpn_status_display)
         self.button_check_vpn.pack(pady=(10, 5))
         
         # Read-Only Text Box for displaying VPN status
         self.text_vpn_status = ScrolledText(self, wrap=tk.WORD, width=40, height=10, state='disabled')
         self.text_vpn_status.pack(pady=(5, 10))
+
+        # Needed number of URLs Entry
+        tk.Label(self, text="Needed number of URLs:").pack(pady=(10, 0))
+        self.entry_needed_urls = tk.Entry(self)
+        self.entry_needed_urls.pack(pady=(0, 10))
+
+        # Display Selected URLs
+        self.text_display_urls = ScrolledText(self, wrap=tk.WORD, width=50, height=15, state='disabled')
+        self.text_display_urls.pack(pady=(10, 0))
+
+        # Load URLs Button
+        tk.Button(self, text="Load URLs", command=self.load_urls).pack(pady=(10, 0))
 
     def select_file(self):
         """
@@ -88,7 +100,7 @@ class URLManagerGUI(tk.Tk):
         """
         Upload multiple URLs from the selected file to the database, under the selected domain.
         """
-        domain = self.entry_domain.get()
+        domain = self.domain_var.get()
         if self.selected_file and domain:
             count = upload_urls_from_file(self.db_config, self.selected_file, domain)
             messagebox.showinfo("Upload Complete", f"{count} URLs have been uploaded.")
@@ -146,12 +158,32 @@ class URLManagerGUI(tk.Tk):
         except Exception as e:
             messagebox.showerror("Export Failed", f"An error occurred: {e}")
 
-    def check_vpn_status(self):
+    def update_vpn_status_display(self):
         """
-        Fetch VPN status and update the read-only text box.
+        Fetches and displays the formatted VPN status.
         """
-        status = get_vpn_status()  # This function should return the VPN status as a string
-        self.text_vpn_status.config(state='normal')  # Temporarily enable the widget to update text
-        self.text_vpn_status.delete('1.0', tk.END)  # Clear existing content
-        self.text_vpn_status.insert(tk.END, status)  # Insert the fetched status
-        self.text_vpn_status.config(state='disabled')  # Disable the widget again to make it read-only
+        status_info = get_vpn_status()  # Fetches the VPN status as a dictionary
+        # Format the dictionary into a readable string
+        if isinstance(status_info, dict):
+            formatted_status = "\n".join(f"{key}: {value}" for key, value in status_info.items())
+        else:
+            formatted_status = "Unable to fetch VPN status."
+        self.text_vpn_status.config(state='normal')  # Enable the widget for updating
+        self.text_vpn_status.delete('1.0', tk.END)  # Clear current content
+        self.text_vpn_status.insert(tk.END, formatted_status)  # Insert the formatted status
+        self.text_vpn_status.config(state='disabled')  # Make it read-only again
+        
+    def load_urls(self):
+        """
+        Function to load the URLs
+        """
+        urls = get_all_urls(self.db_config)
+        self.text_display_urls.config(state='normal')  # Enable the widget for updating
+        self.text_display_urls.delete('1.0', tk.END)  # Clear current content
+        for url in urls:
+            self.text_display_urls.insert(tk.END, url + '\n')  # Insert URLs
+
+        self.text_display_urls.config(state='disabled')  # Make it read-only again
+
+
+
