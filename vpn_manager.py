@@ -1,7 +1,9 @@
+# vpn.py
 from nordvpn_connect import initialize_vpn, rotate_VPN, close_vpn_connection, get_current_ip
 import sys
 import subprocess
 import re
+import logging
 
 def get_vpn_status():
     """
@@ -40,13 +42,13 @@ def check_vpn_status():
     try:
         current_ip = get_current_ip()
         if not current_ip.startswith("176.27"):
-            print(f"VPN is very likely connected. Current IP: {current_ip}")
+            logging.infof"VPN is very likely connected. Current IP: {current_ip}")
             return True
         else:
-            print("VPN is not connected or Current IP is in the normal range.")
+            logging.info("VPN is not connected or Current IP is in the normal range.")
             return False
     except Exception as e:
-        print(f"Error checking VPN status: {e}")
+        logging.error(f"Error checking VPN status: {e}")
         return False
 
 def connect_vpn(selected_browser,browsers):
@@ -69,15 +71,15 @@ def connect_vpn(selected_browser,browsers):
     rotate_VPN(settings)
     
     if check_vpn_status():
-        print(f"Successfully connected to VPN server {server_code}.")
+        logging.info(f"Successfully connected to VPN server {server_code}.")
     else:
-        print(f"Attempting to connect to VPN server {server_code}...")
+        logging.info(f"Attempting to connect to VPN server {server_code}...")
         for _ in range(5):
             rotate_VPN(settings)
             if check_vpn_status():
-                print(f"Successfully connected to VPN server {server_code}.")
+                logging.info(f"Successfully connected to VPN server {server_code}.")
                 return
-            print("Retrying...")
-        print("Failed to connect to VPN after multiple attempts. Exiting.")
+            logging.info("Retrying...")
+        logging.error("Failed to connect to VPN after multiple attempts. Exiting.")
         close_vpn_connection(settings)
         sys.exit(1)

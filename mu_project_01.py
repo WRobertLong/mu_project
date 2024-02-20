@@ -12,14 +12,16 @@ import sys
 import os
 import random
 import time
-import vpn_manager
-from db import load_database_config,  get_browsers, get_all_urls
+import logging
+import vpn_manager as vpn
+import db
 
-db_config = load_database_config()
-browsers = get_browsers(db_config)
-# print("Current working directory:", os.getcwd())
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s', filename='mu_project.log')
 
-def select_browser():
+db_config: dict = db.load_database_config()
+browsers: dict = db.get_browsers(db_config)
+
+def select_browser() -> None:
     """
     Present the user with a list of available browsers and allow them to select one.
 
@@ -32,10 +34,6 @@ def select_browser():
     Exits:
         The program exits if the user makes an invalid selection.
     """
-
-    print("Available browsers:")
-    for i, browser in enumerate(browsers.keys(), start=1):
-        print(f"{i}) {browser} - {browsers[browser]['vpn']}")
     
     choice = int(input("Enter the number of the browser you want to set as default: "))
     if 1 <= choice <= len(browsers):
@@ -44,36 +42,7 @@ def select_browser():
         print("Invalid selection.")
         sys.exit(1)
 
-def process_urls_old(db_config, modify_line_multiple, output_line_multiple, starting_point=1):
-    """
-    Process a list of URLs from the database, applying modification and output conditions.
-
-    Args:
-        db_config (dict): Database configuration parameters.
-        modify_line_multiple (int): Multiple for deciding which URLs to modify.
-        output_line_multiple (int): Multiple for deciding which URLs to output.
-        starting_point (int, optional): The starting index for processing URLs. Defaults to 1.
-
-    Returns:
-        list: A list of final URLs after processing based on the given criteria.
-    """
-
-    urls = get_all_urls(db_config)
-    print(urls)
-
-    final_urls = []
-    for i, url in enumerate(urls, start=1):  # Always start from 1, not starting_point
-        print(f"i: {i}, meets output condition: {(i - starting_point) % output_line_multiple == 0}, meets modify condition: {(i - starting_point) % modify_line_multiple == 0}")
-        if (i >= starting_point) and ((i - starting_point) % output_line_multiple == 0):
-            if ((i - starting_point) % modify_line_multiple) == 0:
-                if not url.startswith('http://') and not url.startswith('https://'):
-                    url = 'http://' + url
-                url = url.replace('compage=', 'com?page=')
-            final_urls.append(url)
-
-    return final_urls
-
-def open_urls(urls, selected_browser):
+def open_urls(urls_with_ids, selected_browser, db_config) -> None:
     """
     Open a list of URLs using the command associated with the selected browser.
 
@@ -83,14 +52,25 @@ def open_urls(urls, selected_browser):
         urls (list): A list of URLs to be opened.
         selected_browser (str): The browser name as selected by the user.
     """
-    
+
     browser_command = browsers[selected_browser]["command"]
-    for url in urls:
-        subprocess.Popen([browser_command, url])
-        print(f"Opened URL: {url}")
-        sleep_time = random.randint(30, 90)  # Adjust timing as needed (seconds)
-        print(f"Sleeping for {sleep_time} secs")
+
+
+    for url_id, url in urls_with_ids:
+        logging.info(f"About to launch {browser_command} with {url}")
+        try:
+            subprocess.Popen([browser_command, url])
+            logging.info(f"Opened URL: {url} at {time.ctime()}")
+            browser_id = browsers[selected_browser]["id"]
+            db.insert_url_open_history(url_id, browser_id, db_config)
+        except Exception as e:
+            logging.info(f"Failed to open URL: {url}. Error: {e}")
+            continue
+        
+        sleep_time = random.randint(30, 90)
+        logging.info(f"Sleeping for {sleep_time} seconds...")
         time.sleep(sleep_time)
+        logging.info(f"Resuming at {time.ctime()}")
 
 if __name__ == "__main__":
     # Check if the user wants to launch the GUI
@@ -101,7 +81,6 @@ if __name__ == "__main__":
         app = URLManagerGUI()
         app.mainloop()
 
-        
     # Proceed with the original CLI functionality if the correct number of arguments are provided
     elif len(sys.argv) == 4:
         filename = sys.argv[1]
