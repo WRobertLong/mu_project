@@ -42,7 +42,7 @@ def check_vpn_status():
     try:
         current_ip = get_current_ip()
         if not current_ip.startswith("176.27"):
-            logging.infof"VPN is very likely connected. Current IP: {current_ip}")
+            logging.info("VPN is very likely connected. Current IP: {current_ip}")
             return True
         else:
             logging.info("VPN is not connected or Current IP is in the normal range.")
@@ -51,35 +51,58 @@ def check_vpn_status():
         logging.error(f"Error checking VPN status: {e}")
         return False
 
-def connect_vpn(selected_browser,browsers):
+def connect_vpn(selected_browser, browsers) -> bool:
     """
     Establish a VPN connection using the selected browser's VPN settings.
 
-    Attempts to connect to the VPN server associated with the selected browser.
-    Retries up to 5 times if the initial connection attempt fails.
-
     Args:
         selected_browser (str): The browser name as selected by the user.
-        browsers()
+        browsers (dict): Dictionary containing browser configuration, including VPN settings.
 
-    Exits:
-        The program exits if the VPN connection fails after multiple attempts.
+    Returns:
+        bool: True if the VPN connection was successfully established, False otherwise.
     """
-
     server_code = browsers[selected_browser]["vpn"]
     settings = initialize_vpn(server_code)
-    rotate_VPN(settings)
-    
-    if check_vpn_status():
-        logging.info(f"Successfully connected to VPN server {server_code}.")
+
+    # Attempt to connect to the VPN with retry logic
+    if not attempt_vpn_rotation(settings):
+        logging.error(f"Failed to connect to VPN server {server_code} after retries.")
+        close_vpn_connection(settings)  # Ensure to close any partially established connections
+        return False
     else:
-        logging.info(f"Attempting to connect to VPN server {server_code}...")
-        for _ in range(5):
+        return True
+    
+
+def attempt_vpn_rotation(settings, retries=5) -> bool:
+    """
+    Attempts to rotate the VPN connection with retry logic.
+
+    Args:
+        settings: The VPN settings to use for the connection.
+        retries (int): Number of times to retry the connection attempt.
+
+    Returns:
+        bool: True if the VPN connection was successfully established, False otherwise.
+    """
+    print(f"Settings are {settings}")
+    for attempt in range(retries + 1):  # Include initial attempt + retries
+        try:
+            print(f"About to rotate VPN with {settings} parameter")
             rotate_VPN(settings)
             if check_vpn_status():
-                logging.info(f"Successfully connected to VPN server {server_code}.")
-                return
-            logging.info("Retrying...")
-        logging.error("Failed to connect to VPN after multiple attempts. Exiting.")
-        close_vpn_connection(settings)
-        sys.exit(1)
+                print("connected to VPN \n")
+                if attempt > 0:
+                    print(f"Successfully connected to VPN after {attempt} retries.")
+                else:
+                    print("Successfully connected to VPN.")
+                return True
+            else:
+                print("Not connected to vpn \n")
+        except Exception as e:
+            print(f"Error rotating VPN on attempt {attempt}: {e}")
+        if attempt < retries:
+            print("Retrying...")
+        else:
+            print("Failed to connect to VPN after multiple attempts.")
+    return False

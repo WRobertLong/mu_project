@@ -8,6 +8,7 @@ import db
 import vpn_manager as vpn
 import threading
 import logging
+import mysql.connector as mysql
 
 class URLManagerGUI(tk.Tk):
     def __init__(self, *args, **kwargs) -> None:
@@ -78,22 +79,52 @@ class URLManagerGUI(tk.Tk):
 
     def setup_vpn_controls(self)-> None:
         # VPN/Browser-related widgets in a frame
+        # This will contain 2 rows, one for the connect and check buttons and the browser dropdown
+        # And below it the radio buttons that will control details of the URLs to be fetched.
+
         vpn_frame = tk.Frame(self)
         vpn_frame.pack(pady=(10, 0))
-        button_connect_vpn = tk.Button(vpn_frame, text="Connect VPN", command=self.connect_vpn)
-        button_connect_vpn.pack(side=tk.LEFT, padx=(0, 10))
-        button_check_vpn = tk.Button(vpn_frame, text="Check VPN Status", command=self.update_vpn_status_display)
-        button_check_vpn.pack(side=tk.LEFT, padx=(0, 10))
-        self.text_vpn_status = ScrolledText(self, wrap=tk.WORD, width=40, height=10, state='disabled')
-        self.text_vpn_status.pack(pady=(5, 10))
 
-        # Browser Selection Combobox
+        # Top frame for the VPN buttons and browser selection
+        top_frame = tk.Frame(vpn_frame)
+        top_frame.pack(fill=tk.X) 
+
+         # Connect VPN Button
+        button_connect_vpn = tk.Button(top_frame, text="Connect VPN", command=self.connect_vpn)
+        button_connect_vpn.pack(side=tk.LEFT, padx=(0, 10))
+
+        # Check VPN Status Button
+        button_check_vpn = tk.Button(top_frame, text="Check VPN Status", command=self.update_vpn_status_display)
+        button_check_vpn.pack(side=tk.LEFT, padx=(0, 10))
+
+        # Frame for the Combobox with a border
+        combobox_frame = tk.Frame(top_frame, borderwidth=2, relief="groove")  # You can adjust borderwidth and relief
+        combobox_frame.pack(side=tk.LEFT, padx=(0, 10))
+
+        # Browser Selection Combobox within the bordered frame
         self.browser_var = tk.StringVar(self)
-        self.browsers_combo = ttk.Combobox(vpn_frame, textvariable=self.browser_var, values=list(self.browsers.keys()), state="readonly")
-        self.browsers_combo.pack(side=tk.LEFT, padx=(0, 10))
+        self.browsers_combo = ttk.Combobox(combobox_frame, textvariable=self.browser_var, values=list(self.browsers.keys()), state="readonly")
+        self.browsers_combo.pack(padx=2, pady=2)  # Padding inside the combobox frame to simulate a border
         self.browsers_combo.bind("<<ComboboxSelected>>", self.on_browser_selected)
         if self.browsers:
             self.browser_var.set(self.selected_browser)
+
+        # Bottom frame for the radio buttons
+        bottom_frame = tk.Frame(vpn_frame)
+        bottom_frame.pack(fill=tk.X)
+
+        # Radio buttons to control the query
+        self.url_loading_preference = tk.StringVar(value="Most Recent")  # Default to newest
+        tk.Radiobutton(bottom_frame, text="Most Recent", variable=self.url_loading_preference, value="Most Recent").pack(side=tk.LEFT, padx=(0, 10))
+        tk.Radiobutton(bottom_frame, text="Oldest", variable=self.url_loading_preference, value="Oldest").pack(side=tk.LEFT, padx=(0, 10))
+        tk.Radiobutton(bottom_frame, text="Random page", variable=self.url_loading_preference, value="Random page").pack(side=tk.LEFT, padx=(0, 10))
+
+        # VPN Status Display
+        self.text_vpn_status = ScrolledText(self, wrap=tk.WORD, width=40, height=10, state='disabled')
+        self.text_vpn_status.pack(pady=(5, 10))
+
+        self.after(100, lambda: self.url_loading_preference.set("Most Recent"))
+
 
     def setup_url_loading(self)-> None:
         # Frame for URL loading and browser selection
@@ -110,7 +141,6 @@ class URLManagerGUI(tk.Tk):
         # Add "Open URLs" Button
         button_open_urls = tk.Button(url_frame, text="Open URLs", command=self.execute_open_urls)
         button_open_urls.pack(side=tk.LEFT, padx=(10, 10))
-
 
         # Display area for URLs
         self.text_display_urls = ScrolledText(self, wrap=tk.WORD, width=100, height=15, state='disabled')
@@ -157,10 +187,29 @@ class URLManagerGUI(tk.Tk):
 
     def clear_urls(self)-> None:
         """
-        Clear all URLs from the database.
+        Clear all URLs from the database after confirming with the user, with detailed error handling.
         """
-        db.clear_all_urls(self.db_config)
-        messagebox.showinfo("Clear URLs", "All URLs have been deleted from the database.")
+        # Confirm with the user before proceeding
+        confirmation = messagebox.askyesno("Confirm Clear", "This will remove all URLs from the database. This cannot be undone. Do you want to proceed?")
+        if not confirmation:  # If the user does not confirm, exit the method
+            return
+        try:
+            db.clear_all_urls(self.db_config)  # Attempt to clear all URLs from the database
+            messagebox.showinfo("Clear URLs", "All URLs have been deleted from the database.")
+        except mysql.IntegrityError as ie:
+            messagebox.showerror("Integrity Error", f"An integrity error occurred: {ie}")
+        except mysql.DataError as de:
+            messagebox.showerror("Data Error", f"A data error occurred: {de}")
+        except mysql.DatabaseError as dbe:
+            messagebox.showerror("Database Error", f"A database error occurred: {dbe}")
+        except mysql.InterfaceError as ife:
+            messagebox.showerror("Interface Error", f"A connection error occurred: {ife}")
+        except mysql.Error as e:  # Catch-all for any other MySQL-related errors
+            messagebox.showerror("Database Error", f"An error occurred while trying to clear URLs: {e}")
+        finally:
+            # This block will run whether the try block succeeds or an exception is caught
+            # Use this area for cleanup actions or final steps you need to take
+            pass  # Replace this with any final steps you need to take
 
     def export_to_csv(self)-> None:
         """
@@ -214,7 +263,6 @@ class URLManagerGUI(tk.Tk):
         needed = int(self.entry_needed_urls.get())  #number of URLS required
         domain = self.domain_var.get() # The current domain
 
-        #urls = db.weighted_sample_without_replacement(self.db_config, needed, domain)
         self.loaded_urls = db.weighted_sample_without_replacement(self.db_config, needed, domain)
 
         # Update the display area with the selected URLs
@@ -252,12 +300,14 @@ class URLManagerGUI(tk.Tk):
         self.update_vpn_status_display()
 
     def connect_vpn(self)-> None:
-        # This method will be called when the "Connect VPN" button is clicked
+    # This method will be called when the "Connect VPN" button is clicked
         if self.selected_browser:  # Ensure a browser is selected
             try:
-                # Assuming connect_vpn function requires the selected browser's name
-                # and the browsers dictionary as arguments
-                vpn.connect_vpn(self.selected_browser, self.browsers)
+                # Attempt to connect to the VPN
+                if not vpn.connect_vpn(self.selected_browser, self.browsers):
+                    logging.critical("Failed to connect to VPN.")
+                    messagebox.showerror("VPN Connection Failed", "Failed to establish a VPN connection. Please check your settings and try again.")
+                    return  # Exit the function, but don't quit the application
                 messagebox.showinfo("VPN Connection", "VPN successfully connected.")
                 # Optionally, update the VPN status display after connecting
                 self.update_vpn_status_display()

@@ -1,5 +1,5 @@
 #db.py
-import mysql.connector
+import mysql.connector as mysql
 import yaml
 import numpy as np
 from datetime import datetime
@@ -31,7 +31,7 @@ def get_browsers(db_config) -> list:
     """
     browsers_dict = {}
     try:
-        conn = mysql.connector.connect(**db_config)
+        conn = mysql.connect(**db_config)
         cursor = conn.cursor()
         cursor.execute("SELECT id, name, vpn_code, command FROM browsers")
         for (id, name, vpn_code, command) in cursor:
@@ -53,7 +53,7 @@ def get_all_urls(db_config, domain=None) -> list:
     Returns:
         list: List of URLs.
     """
-    conn = mysql.connector.connect(**db_config)
+    conn = mysql.connect(**db_config)
     cursor = conn.cursor()
     query = "SELECT url FROM urls"
     params = ()
@@ -78,11 +78,20 @@ def insert_url(db_config, url, domain) -> None:
 
     """
     try:
-        conn = mysql.connector.connect(**db_config)
+        conn = mysql.connect(**db_config)
         cursor = conn.cursor()
         query = "INSERT INTO urls (url, domain) VALUES (%s, %s) ON DUPLICATE KEY UPDATE url=url;"
         cursor.execute(query, (url, domain))
         conn.commit()
+    except mysql.IntegrityError as e:
+        logging.error(f"Integrity error inserting URL: {url}. Error: {e}")
+        # Handle data integrity issues, e.g., rollback, notify user
+    except mysql.ProgrammingError as e:
+        logging.error(f"Programming error with query: {e}")
+        # Handle programming errors, e.g., syntax error in the SQL query
+    except mysql.Error as e:
+        logging.error(f"General MySQL error: {e}")
+        # Handle other MySQL errors
     finally:
         if conn.is_connected():
             cursor.close()
@@ -116,7 +125,7 @@ def clear_all_urls(db_config) -> None:
         db_config (dict): Database configuration parameters.
     """
     try:
-        conn = mysql.connector.connect(**db_config)
+        conn = mysql.connect(**db_config)
         cursor = conn.cursor()
         cursor.execute("DELETE FROM urls")
         conn.commit()
@@ -128,7 +137,7 @@ def clear_all_urls(db_config) -> None:
 
 def get_domains(db_config) -> tuple:
    
-    conn = mysql.connector.connect(**db_config)
+    conn = mysql.connect(**db_config)
     cursor = conn.cursor()
     cursor.execute("SELECT domain, default_domain FROM domains")
     domains = cursor.fetchall()
@@ -157,14 +166,14 @@ def insert_into_urls_opened(db_config, url_id) -> bool:
         boolean: True if the insertion was successful, False if unsuccessful.
     """
     try:
-        conn = mysql.connector.connect(**db_config)
+        conn = mysql.connect(**db_config)
         cursor = conn.cursor()
         # Use placeholders for safe query construction
         query = "INSERT INTO urls_opened (url_id, time_opened) VALUES (%s, NOW());"
         cursor.execute(query, (url_id,))
         conn.commit()  # Commit the transaction to save changes
         return True
-    except mysql.connector.Error as e:
+    except mysql.Error as e:
         logging.error(f"Error inserting URL into urls_opened: {e}")
         return False
     finally:
@@ -172,50 +181,6 @@ def insert_into_urls_opened(db_config, url_id) -> bool:
             cursor.close()
             conn.close()
 
-
-def weighted_sample_without_replacement_old(db_config, needed, domain) -> list:
-    """
-    Samples URLs from the database without replacement, according to their weights.
-
-    Args:
-        db_config (dict): Database configuration parameters.
-        needed (int): Number of URLs needed.
-
-    Returns:
-        list: List of sampled URLs.
-    """
-    # Connect to the database and fetch URLs and weights
-    try:
-        conn = mysql.connector.connect(**db_config)
-        cursor = conn.cursor()
-        query = "SELECT id, url, weight FROM urls"
-        params = ()  # Initialize params as an empty tuple
-        if domain:
-            query += " WHERE domain = %s"
-            params = (domain,)  # Add domain to params
-
-        cursor.execute(query, params)
-        urls_data = cursor.fetchall()
-    finally:
-        if conn.is_connected():
-            cursor.close()
-            conn.close()
-
-    if not urls_data:
-        return []
-
-    # Separate IDs, URLs, and weights
-    ids, urls, weights = zip(*urls_data)
-    
-    # Convert weights to probabilities, ensuring they sum to 1
-    total_weight = sum(weights)
-    probabilities = [weight / total_weight for weight in weights]
-
-    # Sample URLs based on their weights without replacement
-    sampled_indices = np.random.choice(len(urls), size=needed, replace=False, p=probabilities)
-    sampled_urls = [urls[i] for i in sampled_indices]
-
-    return sampled_urls
 
 def weighted_sample_without_replacement(db_config, needed, domain) -> list:
     """
@@ -230,7 +195,7 @@ def weighted_sample_without_replacement(db_config, needed, domain) -> list:
     """
     # Connect to the database and fetch URLs and weights
     try:
-        conn = mysql.connector.connect(**db_config)
+        conn = mysql.connect(**db_config)
         cursor = conn.cursor()
         query = "SELECT id, url, weight FROM urls"
         params = ()  # Initialize params as an empty tuple
@@ -278,7 +243,7 @@ def insert_url_open_history(url_id, browser_id, db_config) -> None:
 
     try:
         # Establish a connection to the database
-        conn = mysql.connector.connect(**db_config)
+        conn = mysql.connect(**db_config)
 
         # Create a cursor object
         cursor = conn.cursor()
@@ -291,7 +256,7 @@ def insert_url_open_history(url_id, browser_id, db_config) -> None:
 
         logging.info("URL open history record inserted successfully.")
 
-    except Error as e:
+    except mysql.Error as e:
         logging.error(f"Error while inserting into URL_open_history: {e}")
 
     finally:

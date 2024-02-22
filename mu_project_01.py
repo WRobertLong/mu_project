@@ -4,7 +4,6 @@ Main program for managing VPN connections and opening URLs.
 
 This script allows the user to connect to a VPN using a selected browser,
 processes a list of URLs based on given criteria, and opens those URLs.
-It supports both command-line interface (CLI) and graphical user interface (GUI) modes.
 """
 
 import subprocess
@@ -81,22 +80,3 @@ if __name__ == "__main__":
         app = URLManagerGUI()
         app.mainloop()
 
-    # Proceed with the original CLI functionality if the correct number of arguments are provided
-    elif len(sys.argv) == 4:
-        filename = sys.argv[1]
-        modify_line_multiple = int(sys.argv[2])
-        output_line_multiple = int(sys.argv[3])
-
-        selected_browser = select_browser()
-        vpn_manager.connect_vpn(selected_browser, browsers)  # Use the selected browser's VPN settings
-
-        print("Processing URLs...")
-        final_urls = process_urls(db_config, modify_line_multiple, output_line_multiple)
-
-        print("Opening URLs...")
-        open_urls(final_urls, selected_browser)
-
-        print("Script completed.")
-    else:
-        print("Usage for CLI mode: script.py <filename> <modify-line-multiple> <output-line-multiple>")
-        print("To launch GUI mode: script.py gui")
