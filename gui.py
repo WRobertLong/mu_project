@@ -263,12 +263,12 @@ class URLManagerGUI(tk.Tk):
         needed = int(self.entry_needed_urls.get())  #number of URLS required
         domain = self.domain_var.get() # The current domain
 
-        self.loaded_urls = db.weighted_sample_without_replacement(self.db_config, needed, domain)
+        self.loaded_urls = db.weighted_sample_without_replacement_new(self.db_config, needed, domain)
 
         # Update the display area with the selected URLs
         self.text_display_urls.config(state='normal')  # Enable the widget for updating
         self.text_display_urls.delete('1.0', tk.END)  
-        for _, url in self.loaded_urls:    # Only display the URL part
+        for _, url in sorted(self.loaded_urls, key=lambda x: x[0]):  # Sort by ID
             self.text_display_urls.insert(tk.END, url + '\n')
         self.text_display_urls.config(state='disabled')  # Make it read-only again
 

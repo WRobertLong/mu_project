@@ -2,6 +2,7 @@
 import mysql.connector as mysql
 import yaml
 import numpy as np
+import pandas as pd
 from datetime import datetime
 import logging
 
@@ -225,6 +226,50 @@ def weighted_sample_without_replacement(db_config, needed, domain) -> list:
     sampled_urls_with_ids = [(ids[i], urls[i]) for i in sampled_indices]
 
     return sampled_urls_with_ids
+
+def weighted_sample_without_replacement_new(db_config, needed, domain) -> list:
+    try:
+        conn = mysql.connect(**db_config)
+        cursor = conn.cursor()
+        query = "SELECT id, url, weight FROM urls"
+        params = ()
+        if domain:
+            query += " WHERE domain = %s"
+            params = (domain,)
+        query += " ORDER BY id"
+        cursor.execute(query, params)
+        urls_data = cursor.fetchall()
+    finally:
+        if 'conn' in locals() and conn.is_connected():
+            cursor.close()
+            conn.close()
+
+    if not urls_data:
+        return []
+
+    # Create DataFrame from the fetched data
+    df = pd.DataFrame(urls_data, columns=['id', 'url', 'weight'])
+    df_expanded = expand_df(df)
+    random_rows = df_expanded.sample(n=needed, replace=False)
+
+    # Return a list of tuples (id, url)
+    return list(zip(random_rows['id'], random_rows['url']))
+
+def expand_df(df):
+    # Create an empty list to store each block of replicated rows
+    replicated_blocks = []
+    
+    # Iterate over each row in the DataFrame
+    for index, row in df.iterrows():
+        replicated_block = pd.DataFrame({
+            'id': [row['id']] * row['weight'],  # Replicate the id
+            'url': [row['url']] * row['weight']  # Replicate the url
+        })
+        replicated_blocks.append(replicated_block)
+    
+    # Concatenate all replicated blocks to a single DataFrame
+    expanded_df = pd.concat(replicated_blocks, ignore_index=True)
+    return expanded_df
 
 def insert_url_open_history(url_id, browser_id, db_config) -> None:
     """
