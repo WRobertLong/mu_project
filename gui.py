@@ -5,6 +5,7 @@ from tkinter.scrolledtext import ScrolledText
 from mu_project_01 import open_urls
 import csv
 import db
+import re
 import vpn_manager as vpn
 import threading
 import logging
@@ -115,9 +116,14 @@ class URLManagerGUI(tk.Tk):
 
         # Radio buttons to control the query
         self.url_loading_preference = tk.StringVar(value="Most Recent")  # Default to newest
-        tk.Radiobutton(bottom_frame, text="Most Recent", variable=self.url_loading_preference, value="Most Recent").pack(side=tk.LEFT, padx=(0, 10))
-        tk.Radiobutton(bottom_frame, text="Oldest", variable=self.url_loading_preference, value="Oldest").pack(side=tk.LEFT, padx=(0, 10))
-        tk.Radiobutton(bottom_frame, text="Random page", variable=self.url_loading_preference, value="Random page").pack(side=tk.LEFT, padx=(0, 10))
+        #tk.Radiobutton(bottom_frame, text="Most Recent", variable=self.url_loading_preference, value="Most Recent").pack(side=tk.LEFT, padx=(0, 10))
+        #tk.Radiobutton(bottom_frame, text="Oldest", variable=self.url_loading_preference, value="Oldest").pack(side=tk.LEFT, padx=(0, 10))
+        #tk.Radiobutton(bottom_frame, text="Random page", variable=self.url_loading_preference, value="Random page").pack(side=tk.LEFT, padx=(0, 10))
+
+        # Use ttk.Radiobutton instead of tk.Radiobutton
+        ttk.Radiobutton(bottom_frame, text="Most Recent", variable=self.url_loading_preference, value="Most Recent", command=self.on_radio_change).pack(side=tk.LEFT, padx=(10, 0))
+        ttk.Radiobutton(bottom_frame, text="Oldest", variable=self.url_loading_preference, value="Oldest", command=self.on_radio_change).pack(side=tk.LEFT, padx=(10, 0))
+        ttk.Radiobutton(bottom_frame, text="Random page", variable=self.url_loading_preference, value="Random page", command=self.on_radio_change).pack(side=tk.LEFT, padx=(10, 0))
 
         # VPN Status Display
         self.text_vpn_status = ScrolledText(self, wrap=tk.WORD, width=40, height=10, state='disabled')
@@ -125,6 +131,8 @@ class URLManagerGUI(tk.Tk):
 
         self.after(100, lambda: self.url_loading_preference.set("Most Recent"))
 
+    def on_radio_change(self):
+        print(f"Selected URL Loading Preference: {self.url_loading_preference.get()}")
 
     def setup_url_loading(self)-> None:
         # Frame for URL loading and browser selection
@@ -265,27 +273,19 @@ class URLManagerGUI(tk.Tk):
 
         self.loaded_urls = db.weighted_sample_without_replacement_new(self.db_config, needed, domain)
 
+       # Check if the URL loading preference is 'Most Recent'
+        if self.url_loading_preference.get() == "Most Recent":
+            # Process each URL in the loaded_urls list
+            for i in range(len(self.loaded_urls)):
+                url = self.loaded_urls[i][1]  # Assuming the URL is the second item in each tuple
+                # Substitute 'page=xxxxx' with 'page=1'
+                new_url = re.sub(r'page=\d+', 'page=1', url)
+                self.loaded_urls[i] = (self.loaded_urls[i][0], new_url)  # Update the tuple with the new URL
+
         # Update the display area with the selected URLs
         self.text_display_urls.config(state='normal')  # Enable the widget for updating
-        self.text_display_urls.delete('1.0', tk.END)  
+        self.text_display_urls.delete('1.0', tk.END)
         for _, url in sorted(self.loaded_urls, key=lambda x: x[0]):  # Sort by ID
-            self.text_display_urls.insert(tk.END, url + '\n')
-        self.text_display_urls.config(state='disabled')  # Make it read-only again
-
-    def load_urls_old(self)-> None:
-        """
-        Function to load the URLs based on weighted sampling without replacement.
-        """
-        needed = int(self.entry_needed_urls.get())  #number of URLS required
-        domain = self.domain_var.get() # The current domain
-
-        #urls = db.weighted_sample_without_replacement(self.db_config, needed, domain)
-        self.loaded_urls = db.weighted_sample_without_replacement(self.db_config, needed, domain)
-
-        # Update the display area with the selected URLs
-        self.text_display_urls.config(state='normal')  # Enable the widget for updating
-        self.text_display_urls.delete('1.0', tk.END)  
-        for url in self.loaded_urls:
             self.text_display_urls.insert(tk.END, url + '\n')
         self.text_display_urls.config(state='disabled')  # Make it read-only again
 
