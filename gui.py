@@ -6,6 +6,7 @@ from mu_project_01 import open_urls
 import csv
 import db
 import re
+import random
 import vpn_manager as vpn
 import threading
 import logging
@@ -110,31 +111,58 @@ class URLManagerGUI(tk.Tk):
         if self.browsers:
             self.browser_var.set(self.selected_browser)
 
-        # Bottom frame for the radio buttons
-        bottom_frame = tk.Frame(vpn_frame)
-        bottom_frame.pack(fill=tk.X)
-
-        # Radio buttons to control the query
-        self.url_loading_preference = tk.StringVar(value="Most Recent")  # Default to newest
-        #tk.Radiobutton(bottom_frame, text="Most Recent", variable=self.url_loading_preference, value="Most Recent").pack(side=tk.LEFT, padx=(0, 10))
-        #tk.Radiobutton(bottom_frame, text="Oldest", variable=self.url_loading_preference, value="Oldest").pack(side=tk.LEFT, padx=(0, 10))
-        #tk.Radiobutton(bottom_frame, text="Random page", variable=self.url_loading_preference, value="Random page").pack(side=tk.LEFT, padx=(0, 10))
-
-        # Use ttk.Radiobutton instead of tk.Radiobutton
-        ttk.Radiobutton(bottom_frame, text="Most Recent", variable=self.url_loading_preference, value="Most Recent", command=self.on_radio_change).pack(side=tk.LEFT, padx=(10, 0))
-        ttk.Radiobutton(bottom_frame, text="Oldest", variable=self.url_loading_preference, value="Oldest", command=self.on_radio_change).pack(side=tk.LEFT, padx=(10, 0))
-        ttk.Radiobutton(bottom_frame, text="Random page", variable=self.url_loading_preference, value="Random page", command=self.on_radio_change).pack(side=tk.LEFT, padx=(10, 0))
-
         # VPN Status Display
         self.text_vpn_status = ScrolledText(self, wrap=tk.WORD, width=40, height=10, state='disabled')
         self.text_vpn_status.pack(pady=(5, 10))
 
-        self.after(100, lambda: self.url_loading_preference.set("Most Recent"))
+        # Add a button to open the query popup
+        self.setup_query_popup_button()
+
+    def setup_query_popup_button(self) -> None:
+        # Button to open the URL query popup
+        self.button_open_query_popup = tk.Button(self, text="URL Query History", command=self.open_query_popup)
+        self.button_open_query_popup.pack(pady=(10, 0))
 
     def on_radio_change(self):
         print(f"Selected URL Loading Preference: {self.url_loading_preference.get()}")
 
-    def setup_url_loading(self)-> None:
+    def setup_url_loading(self) -> None:
+        # Frame for URL loading, including the "Needed number of URLs" and radio buttons
+        url_frame = tk.Frame(self)
+        url_frame.pack(pady=(10, 0))
+
+        # Part of the frame for "Needed number of URLs"
+        url_entry_frame = tk.Frame(url_frame)
+        url_entry_frame.pack(side=tk.LEFT, padx=(10, 10))
+
+        tk.Label(url_entry_frame, text="Needed number of URLs:").pack(side=tk.LEFT)
+        self.entry_needed_urls = tk.Entry(url_entry_frame)
+        self.entry_needed_urls.pack(side=tk.LEFT)
+
+        self.url_loading_preference = tk.StringVar(value="Most Recent")  # Default to newest
+
+        # Frame for the radio buttons, placed alongside the "Needed number of URLs"
+        radio_button_frame = tk.Frame(url_frame)
+        radio_button_frame.pack(side=tk.LEFT, padx=(20, 10))
+
+        # Radio buttons for URL loading preference
+        ttk.Radiobutton(radio_button_frame, text="Most Recent", variable=self.url_loading_preference, value="Most Recent", command=self.on_radio_change).pack(side=tk.LEFT, padx=(5, 0))
+        ttk.Radiobutton(radio_button_frame, text="Oldest", variable=self.url_loading_preference, value="Oldest", command=self.on_radio_change).pack(side=tk.LEFT, padx=(5, 0))
+        ttk.Radiobutton(radio_button_frame, text="Random page", variable=self.url_loading_preference, value="Random page", command=self.on_radio_change).pack(side=tk.LEFT, padx=(5, 0))
+
+        # Add "Load URLs" and "Open URLs" Buttons
+        button_load_urls = tk.Button(url_frame, text="Load URLs", command=self.load_urls)
+        button_load_urls.pack(side=tk.LEFT, padx=(10, 10))
+
+        button_open_urls = tk.Button(url_frame, text="Open URLs", command=self.execute_open_urls)
+        button_open_urls.pack(side=tk.LEFT, padx=(10, 10))
+
+        # Display area for URLs
+        self.text_display_urls = ScrolledText(self, wrap=tk.WORD, width=100, height=15, state='disabled')
+        self.text_display_urls.pack(pady=(10, 0))
+
+
+    def setup_url_loading_old(self)-> None:
         # Frame for URL loading and browser selection
         url_frame = tk.Frame(self)
         url_frame.pack(pady=(10, 0))
@@ -281,6 +309,18 @@ class URLManagerGUI(tk.Tk):
                 # Substitute 'page=xxxxx' with 'page=1'
                 new_url = re.sub(r'page=\d+', 'page=1', url)
                 self.loaded_urls[i] = (self.loaded_urls[i][0], new_url)  # Update the tuple with the new URL
+        elif self.url_loading_preference.get() == "Random page":
+            for i in range(len(self.loaded_urls)):
+                url = self.loaded_urls[i][1]
+                # Find the page number and replace it with a random number between 1 and the found page number
+                def randomize_page(match):
+                    page_num = int(match.group(1))
+                    if page_num > 1:
+                        return f"page={random.randint(1, page_num)}"
+                    else:
+                        return match.group(0)  # Return the original if page_num is 1 or less
+                new_url = re.sub(r'page=(\d+)', randomize_page, url)
+                self.loaded_urls[i] = (self.loaded_urls[i][0], new_url)
 
         # Update the display area with the selected URLs
         self.text_display_urls.config(state='normal')  # Enable the widget for updating
@@ -337,4 +377,89 @@ class URLManagerGUI(tk.Tk):
             threading.Thread(target=open_urls, args=(self.loaded_urls, selected_browser, self.db_config), daemon=True).start()
         except Exception as e:
             messagebox.showerror("Error Opening URLs", str(e))
-    
+
+    def open_query_popup(self):
+        # Create a new top-level window
+        popup = tk.Toplevel(self)
+        popup.title("Query URLs")
+        popup.geometry("1000x800")  # Adjust the size as needed
+
+        # Domain Entry
+        tk.Label(popup, text="Domain:").pack(pady=(10, 0))
+        domain_entry = tk.Entry(popup)
+        domain_entry.pack(pady=(0, 10))
+
+        # Number of URLs Entry
+        tk.Label(popup, text="Number of URLs to return:").pack(pady=(10, 0))
+        num_urls_entry = tk.Entry(popup)
+        num_urls_entry.pack(pady=(0, 10))
+
+        # From Date Entry
+        tk.Label(popup, text="From Date (YYYY-MM-DD):").pack(pady=(10, 0))
+        from_date_entry = tk.Entry(popup)
+        from_date_entry.pack(pady=(0, 10))
+
+        # Query Button
+        query_button = tk.Button(popup, text="Query URLs", command=lambda: self.execute_query(
+            domain_entry.get(),
+            num_urls_entry.get(),
+            from_date_entry.get(),
+            popup # Passing popup to display results in this window
+        ))
+        query_button.pack(pady=(10, 0))
+
+        # Results display area with fixed-width font
+        text_display = ScrolledText(popup, wrap=tk.WORD, width=120, height=20, font=('Courier', 10))
+        text_display.pack(pady=(10, 0))
+        text_display.config(state='disabled')  # Make it read-only
+
+        # Store for use in execute_query
+        self.query_results_display = text_display
+
+    def execute_query(self, domain, num_urls, from_date, popup):
+        # Construct your query based on the input parameters
+        # This is a placeholder for the actual database query you'll need to perform
+        # You might need to convert `num_urls` to int and handle potential errors
+        try:
+            num_urls_int = int(num_urls)  # Convert num_urls to integer
+        except ValueError:
+            messagebox.showerror("Error", "Number of URLs must be an integer", parent=popup)
+            return
+
+        query = """
+        SELECT urls.url, COUNT(URL_open_history.URL_id) AS occurrences
+        FROM URL_open_history
+        JOIN urls ON URL_open_history.URL_id = urls.id
+        WHERE urls.domain = %s AND URL_open_history.timestamp >= %s
+        GROUP BY URL_open_history.URL_id
+        HAVING COUNT(URL_open_history.URL_id) > 1
+        ORDER BY occurrences DESC
+        LIMIT %s
+        """
+        # Execute the query with your database connection
+        # Assuming `db.execute_query` is a function you'll implement to execute the query
+        results = db.execute_query(self.db_config, query, (domain, from_date, num_urls_int))
+
+        # Display the results in the query_results_display Text widget
+        self.query_results_display.config(state='normal')  # Enable widget for update
+        self.query_results_display.delete('1.0', tk.END)  # Clear existing content
+
+        if results:
+            # Calculate the max URL length for formatting, with a minimum width, e.g., 70 characters
+            max_url_length = max(len(url) for url, occurrences in results)
+            max_url_length = max(max_url_length, 70)
+        
+            # Header for the columns
+            header = f"{'URL'.ljust(max_url_length)}  Count\n"
+            divider = f"{'-' * max_url_length}  {'-' * 5}\n"
+            self.query_results_display.insert(tk.END, header)
+            self.query_results_display.insert(tk.END, divider)
+        
+            for url, occurrences in results:
+                # Left-align the URL and right-align the count, with padding for alignment
+                line = f"{url.ljust(max_url_length)}  {str(occurrences).rjust(5)}\n"
+                self.query_results_display.insert(tk.END, line)
+        else:
+            self.query_results_display.insert(tk.END, "No results found.")
+
+        self.query_results_display.config(state='disabled')  # Make it read-only again

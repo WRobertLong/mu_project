@@ -310,3 +310,28 @@ def insert_url_open_history(url_id, browser_id, db_config) -> None:
             cursor.close()
         if conn:
             conn.close()
+
+def execute_query(db_config, query, params):
+    """
+    Execute a SQL query and return the results.
+
+    :param db_config: Database configuration dictionary.
+    :param query: SQL query string.
+    :param params: Tuple of parameters to be used with the query.
+    :return: List of tuples containing the query results.
+    """
+    try:
+        # Use the alias 'mysql' directly as imported
+        conn = mysql.connect(**db_config)
+        cursor = conn.cursor()
+        cursor.execute(query, params)
+        
+        results = cursor.fetchall()
+
+        cursor.close()
+        conn.close()
+
+        return results
+    except mysql.Error as error:  # Corrected exception handling using the alias
+        print(f"Failed to execute query: {error}")
+        return None

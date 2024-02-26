@@ -45,25 +45,29 @@ def open_urls(urls_with_ids, selected_browser, db_config) -> None:
     """
     Open a list of URLs using the command associated with the selected browser.
 
-    Each URL is opened in the browser, followed by a random sleep period.
+    Each URL is opened in the browser, followed by a random sleep period, in the order of their IDs.
 
     Args:
-        urls (list): A list of URLs to be opened.
+        urls_with_ids (list of tuples): A list of tuples (id, URL) to be opened.
         selected_browser (str): The browser name as selected by the user.
+        db_config: Database configuration.
     """
+
+    # Ensure the URLs are sorted by ID before opening
+    urls_with_ids_sorted = sorted(urls_with_ids, key=lambda x: x[0])
 
     browser_command = browsers[selected_browser]["command"]
 
-
-    for url_id, url in urls_with_ids:
+    for url_id, url in urls_with_ids_sorted:
         logging.info(f"About to launch {browser_command} with {url}")
         try:
             subprocess.Popen([browser_command, url])
             logging.info(f"Opened URL: {url} at {time.ctime()}")
             browser_id = browsers[selected_browser]["id"]
+            # Assuming `db` is a module or an instance that has a method `insert_url_open_history`
             db.insert_url_open_history(url_id, browser_id, db_config)
         except Exception as e:
-            logging.info(f"Failed to open URL: {url}. Error: {e}")
+            logging.error(f"Failed to open URL: {url}. Error: {e}")
             continue
         
         sleep_time = random.randint(30, 90)
