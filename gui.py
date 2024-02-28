@@ -12,15 +12,22 @@ import threading
 import logging
 import mysql.connector as mysql
 
+
 class URLManagerGUI(tk.Tk):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
+        config = db.load_config()
+        self.db_config = config['db_config']
+        self.gui_config = config['gui_config']
         self.title("URL/VPN Management Console")
         self.geometry("1000x1100")
-        icon = PhotoImage(file='/home/long/google-drive/Documents/Python_things/mu_project/TP_icon.png')
+        icon = PhotoImage(
+            file='/home/long/google-drive/Documents/Python_things/mu_project/TP_icon.png')
         self.iconphoto(True, icon)
 
-        self.db_config = db.load_database_config()
+        config = db.load_config() 
+        self.db_config = config['db_config']
+        gui_config = config['gui_config']
 
         # Load browser configurations from the database
         self.browsers = db.get_browsers(self.db_config)
@@ -30,7 +37,8 @@ class URLManagerGUI(tk.Tk):
         self.style.theme_use('default')
 
         # Select a default browser
-        self.selected_browser = next(iter(self.browsers)) if self.browsers else None
+        self.selected_browser = next(
+            iter(self.browsers)) if self.browsers else None
 
         # Load domains from the database
         domain_options, default_domain = db.get_domains(self.db_config)
@@ -38,7 +46,8 @@ class URLManagerGUI(tk.Tk):
         # Setup the domain dropdown
         self.domain_var = tk.StringVar(self)
         self.domain_var.set(default_domain)
-        self.optionmenu_domain = tk.OptionMenu(self, self.domain_var, *domain_options)
+        self.optionmenu_domain = tk.OptionMenu(
+            self, self.domain_var, *domain_options)
         self.optionmenu_domain.pack(pady=(0, 10))
 
         self.setup_file_selection()
@@ -54,9 +63,11 @@ class URLManagerGUI(tk.Tk):
         # File Selection
         self.label_file = tk.Label(self, text="No file selected")
         self.label_file.pack()
-        self.button_select_file = tk.Button(self, text="Select File", command=self.select_file)
+        self.button_select_file = tk.Button(
+            self, text="Select File", command=self.select_file)
         self.button_select_file.pack()
-        self.button_upload = tk.Button(self, text="Upload URLs", command=self.bulk_upload)
+        self.button_upload = tk.Button(
+            self, text="Upload URLs", command=self.bulk_upload)
         self.button_upload.pack(pady=(10, 0))
 
     def setup_url_entry(self) -> None:
@@ -65,21 +76,24 @@ class URLManagerGUI(tk.Tk):
         self.label_url.pack(pady=(10, 0))
         self.entry_url = tk.Entry(self)
         self.entry_url.pack(pady=(0, 10))
-        self.button_upload_single = tk.Button(self, text="Upload Single URL", command=self.upload_single_url)
+        self.button_upload_single = tk.Button(
+            self, text="Upload Single URL", command=self.upload_single_url)
         self.button_upload_single.pack(pady=(10, 0))
-        self.button_clear = tk.Button(self, text="Clear All URLs", command=self.clear_urls)
+        self.button_clear = tk.Button(
+            self, text="Clear All URLs", command=self.clear_urls)
         self.button_clear.pack(pady=(10, 0))
 
-    def setup_export_to_csv(self)-> None:
+    def setup_export_to_csv(self) -> None:
         # Filename Entry for export
         self.label_filename = tk.Label(self, text="Filename:")
         self.label_filename.pack(pady=(10, 0))
         self.entry_filename = tk.Entry(self)
         self.entry_filename.pack(pady=(0, 10))
-        self.button_export_csv = tk.Button(self, text="Export to CSV", command=self.export_to_csv)
+        self.button_export_csv = tk.Button(
+            self, text="Export to CSV", command=self.export_to_csv)
         self.button_export_csv.pack(pady=(10, 0))
 
-    def setup_vpn_controls(self)-> None:
+    def setup_vpn_controls(self) -> None:
         # VPN/Browser-related widgets in a frame
         # This will contain 2 rows, one for the connect and check buttons and the browser dropdown
         # And below it the radio buttons that will control details of the URLs to be fetched.
@@ -89,30 +103,37 @@ class URLManagerGUI(tk.Tk):
 
         # Top frame for the VPN buttons and browser selection
         top_frame = tk.Frame(vpn_frame)
-        top_frame.pack(fill=tk.X) 
+        top_frame.pack(fill=tk.X)
 
-         # Connect VPN Button
-        button_connect_vpn = tk.Button(top_frame, text="Connect VPN", command=self.connect_vpn)
+        # Connect VPN Button
+        button_connect_vpn = tk.Button(
+            top_frame, text="Connect VPN", command=self.connect_vpn)
         button_connect_vpn.pack(side=tk.LEFT, padx=(0, 10))
 
         # Check VPN Status Button
-        button_check_vpn = tk.Button(top_frame, text="Check VPN Status", command=self.update_vpn_status_display)
+        button_check_vpn = tk.Button(
+            top_frame, text="Check VPN Status", command=self.update_vpn_status_display)
         button_check_vpn.pack(side=tk.LEFT, padx=(0, 10))
 
         # Frame for the Combobox with a border
-        combobox_frame = tk.Frame(top_frame, borderwidth=2, relief="groove")  # You can adjust borderwidth and relief
+        # You can adjust borderwidth and relief
+        combobox_frame = tk.Frame(top_frame, borderwidth=2, relief="groove")
         combobox_frame.pack(side=tk.LEFT, padx=(0, 10))
 
         # Browser Selection Combobox within the bordered frame
         self.browser_var = tk.StringVar(self)
-        self.browsers_combo = ttk.Combobox(combobox_frame, textvariable=self.browser_var, values=list(self.browsers.keys()), state="readonly")
-        self.browsers_combo.pack(padx=2, pady=2)  # Padding inside the combobox frame to simulate a border
-        self.browsers_combo.bind("<<ComboboxSelected>>", self.on_browser_selected)
+        self.browsers_combo = ttk.Combobox(combobox_frame, textvariable=self.browser_var, values=list(
+            self.browsers.keys()), state="readonly")
+        # Padding inside the combobox frame to simulate a border
+        self.browsers_combo.pack(padx=2, pady=2)
+        self.browsers_combo.bind(
+            "<<ComboboxSelected>>", self.on_browser_selected)
         if self.browsers:
             self.browser_var.set(self.selected_browser)
 
         # VPN Status Display
-        self.text_vpn_status = ScrolledText(self, wrap=tk.WORD, width=40, height=10, state='disabled')
+        self.text_vpn_status = ScrolledText(
+            self, wrap=tk.WORD, width=40, height=10, state='disabled')
         self.text_vpn_status.pack(pady=(5, 10))
 
         # Add a button to open the query popup
@@ -120,11 +141,13 @@ class URLManagerGUI(tk.Tk):
 
     def setup_query_popup_button(self) -> None:
         # Button to open the URL query popup
-        self.button_open_query_popup = tk.Button(self, text="URL Query History", command=self.open_query_popup)
+        self.button_open_query_popup = tk.Button(
+            self, text="URL Query History", command=self.open_query_popup)
         self.button_open_query_popup.pack(pady=(10, 0))
 
     def on_radio_change(self):
-        print(f"Selected URL Loading Preference: {self.url_loading_preference.get()}")
+        print(
+            f"Selected URL Loading Preference: {self.url_loading_preference.get()}")
 
     def setup_url_loading(self) -> None:
         # Frame for URL loading, including the "Needed number of URLs" and radio buttons
@@ -135,38 +158,46 @@ class URLManagerGUI(tk.Tk):
         url_entry_frame = tk.Frame(url_frame)
         url_entry_frame.pack(side=tk.LEFT, padx=(10, 10))
 
-        tk.Label(url_entry_frame, text="Needed number of URLs:").pack(side=tk.LEFT)
+        tk.Label(url_entry_frame, text="Needed number of URLs:").pack(
+            side=tk.LEFT)
         self.entry_needed_urls = tk.Entry(url_entry_frame)
         self.entry_needed_urls.pack(side=tk.LEFT)
 
-        self.url_loading_preference = tk.StringVar(value="Most Recent")  # Default to newest
+        self.url_loading_preference = tk.StringVar(
+            value="Most Recent")  # Default to newest
 
         # Frame for the radio buttons, placed alongside the "Needed number of URLs"
         radio_button_frame = tk.Frame(url_frame)
         radio_button_frame.pack(side=tk.LEFT, padx=(20, 10))
 
         # Radio buttons for URL loading preference
-        ttk.Radiobutton(radio_button_frame, text="Most Recent", variable=self.url_loading_preference, value="Most Recent", command=self.on_radio_change).pack(side=tk.LEFT, padx=(5, 0))
-        ttk.Radiobutton(radio_button_frame, text="Oldest", variable=self.url_loading_preference, value="Oldest", command=self.on_radio_change).pack(side=tk.LEFT, padx=(5, 0))
-        ttk.Radiobutton(radio_button_frame, text="Random page", variable=self.url_loading_preference, value="Random page", command=self.on_radio_change).pack(side=tk.LEFT, padx=(5, 0))
+        ttk.Radiobutton(radio_button_frame, text="Most Recent", variable=self.url_loading_preference,
+                        value="Most Recent", command=self.on_radio_change).pack(side=tk.LEFT, padx=(5, 0))
+        ttk.Radiobutton(radio_button_frame, text="Oldest", variable=self.url_loading_preference,
+                        value="Oldest", command=self.on_radio_change).pack(side=tk.LEFT, padx=(5, 0))
+        ttk.Radiobutton(radio_button_frame, text="Random page", variable=self.url_loading_preference,
+                        value="Random page", command=self.on_radio_change).pack(side=tk.LEFT, padx=(5, 0))
 
         # Add "Load URLs" and "Open URLs" Buttons
-        button_load_urls = tk.Button(url_frame, text="Load URLs", command=self.load_urls)
+        button_load_urls = tk.Button(
+            url_frame, text="Load URLs", command=self.load_urls)
         button_load_urls.pack(side=tk.LEFT, padx=(10, 10))
 
-        button_open_urls = tk.Button(url_frame, text="Open URLs", command=self.execute_open_urls)
+        button_open_urls = tk.Button(
+            url_frame, text="Open URLs", command=self.execute_open_urls)
         button_open_urls.pack(side=tk.LEFT, padx=(10, 10))
 
         # Display area for URLs
-        self.text_display_urls = ScrolledText(self, wrap=tk.WORD, width=100, height=15, state='disabled')
+        self.text_display_urls = ScrolledText(
+            self, wrap=tk.WORD, width=100, height=15, state='disabled')
         self.text_display_urls.pack(pady=(10, 0))
 
-
-    def setup_url_loading_old(self)-> None:
+    def setup_url_loading_old(self) -> None:
         # Frame for URL loading and browser selection
         url_frame = tk.Frame(self)
         url_frame.pack(pady=(10, 0))
-        button_load_urls = tk.Button(url_frame, text="Load URLs", command=self.load_urls)
+        button_load_urls = tk.Button(
+            url_frame, text="Load URLs", command=self.load_urls)
         button_load_urls.pack(side=tk.LEFT, padx=(0, 10))
 
         # Needed number of URLs Entry
@@ -175,79 +206,96 @@ class URLManagerGUI(tk.Tk):
         self.entry_needed_urls.pack(pady=(0, 10))
 
         # Add "Open URLs" Button
-        button_open_urls = tk.Button(url_frame, text="Open URLs", command=self.execute_open_urls)
+        button_open_urls = tk.Button(
+            url_frame, text="Open URLs", command=self.execute_open_urls)
         button_open_urls.pack(side=tk.LEFT, padx=(10, 10))
 
         # Display area for URLs
-        self.text_display_urls = ScrolledText(self, wrap=tk.WORD, width=100, height=15, state='disabled')
+        self.text_display_urls = ScrolledText(
+            self, wrap=tk.WORD, width=100, height=15, state='disabled')
         self.text_display_urls.pack(pady=(10, 0))
 
-    def select_file(self)-> None:
+    def select_file(self) -> None:
         """
         Open a file dialog to select a file, and update the label to show the selected file's name.
         """
-        self.selected_file = filedialog.askopenfilename(title="Select a file", filetypes=(("Text files", "*.txt"), ("All files", "*.*")))
+        self.selected_file = filedialog.askopenfilename(
+            title="Select a file", filetypes=(("Text files", "*.txt"), ("All files", "*.*")))
         if self.selected_file:
-            self.label_file.config(text=f"Selected File: {self.selected_file.split('/')[-1]}")
+            self.label_file.config(
+                text=f"Selected File: {self.selected_file.split('/')[-1]}")
 
-    def bulk_upload(self)-> None:
+    def bulk_upload(self) -> None:
         """
         Upload multiple URLs from the selected file to the database, under the selected domain.
         """
         domain = self.domain_var.get()
         if self.selected_file and domain:
-            count = db.upload_urls_from_file(self.db_config, self.selected_file, domain)
-            messagebox.showinfo("Upload Complete", f"{count} URLs have been uploaded.")
+            count = db.upload_urls_from_file(
+                self.db_config, self.selected_file, domain)
+            messagebox.showinfo("Upload Complete",
+                                f"{count} URLs have been uploaded.")
         else:
-            messagebox.showwarning("Missing Information", "Please select a file and enter a domain.")
+            messagebox.showwarning("Missing Information",
+                                   "Please select a file and enter a domain.")
 
-    def upload_single_url(self)-> None:
+    def upload_single_url(self) -> None:
         """
         Upload a single URL, entered in the text entry field, to the database under the selected domain.
         """
         url = self.entry_url.get()
         domain = self.entry_domain.get()
         if not url:
-            messagebox.showwarning("Missing Information", "Please enter a URL.")
+            messagebox.showwarning("Missing Information",
+                                   "Please enter a URL.")
             return
         # Assuming URL validation is desired; simplistic check:
         if not url.startswith('http://') and not url.startswith('https://'):
-            messagebox.showwarning("Invalid URL", "URL must start with http:// or https://")
+            messagebox.showwarning(
+                "Invalid URL", "URL must start with http:// or https://")
             return
         try:
             db.insert_url(self.db_config, url, domain)
             messagebox.showinfo("Success", "URL has been uploaded.")
-            self.entry_url.delete(0, tk.END)  # Clear the URL entry after successful upload
+            # Clear the URL entry after successful upload
+            self.entry_url.delete(0, tk.END)
         except Exception as e:
             messagebox.showerror("Error", f"Failed to upload URL: {e}")
 
-    def clear_urls(self)-> None:
+    def clear_urls(self) -> None:
         """
         Clear all URLs from the database after confirming with the user, with detailed error handling.
         """
         # Confirm with the user before proceeding
-        confirmation = messagebox.askyesno("Confirm Clear", "This will remove all URLs from the database. This cannot be undone. Do you want to proceed?")
+        confirmation = messagebox.askyesno(
+            "Confirm Clear", "This will remove all URLs from the database. This cannot be undone. Do you want to proceed?")
         if not confirmation:  # If the user does not confirm, exit the method
             return
         try:
-            db.clear_all_urls(self.db_config)  # Attempt to clear all URLs from the database
-            messagebox.showinfo("Clear URLs", "All URLs have been deleted from the database.")
+            # Attempt to clear all URLs from the database
+            db.clear_all_urls(self.db_config)
+            messagebox.showinfo(
+                "Clear URLs", "All URLs have been deleted from the database.")
         except mysql.IntegrityError as ie:
-            messagebox.showerror("Integrity Error", f"An integrity error occurred: {ie}")
+            messagebox.showerror(
+                "Integrity Error", f"An integrity error occurred: {ie}")
         except mysql.DataError as de:
             messagebox.showerror("Data Error", f"A data error occurred: {de}")
         except mysql.DatabaseError as dbe:
-            messagebox.showerror("Database Error", f"A database error occurred: {dbe}")
+            messagebox.showerror(
+                "Database Error", f"A database error occurred: {dbe}")
         except mysql.InterfaceError as ife:
-            messagebox.showerror("Interface Error", f"A connection error occurred: {ife}")
+            messagebox.showerror(
+                "Interface Error", f"A connection error occurred: {ife}")
         except mysql.Error as e:  # Catch-all for any other MySQL-related errors
-            messagebox.showerror("Database Error", f"An error occurred while trying to clear URLs: {e}")
+            messagebox.showerror(
+                "Database Error", f"An error occurred while trying to clear URLs: {e}")
         finally:
             # This block will run whether the try block succeeds or an exception is caught
             # Use this area for cleanup actions or final steps you need to take
             pass  # Replace this with any final steps you need to take
 
-    def export_to_csv(self)-> None:
+    def export_to_csv(self) -> None:
         """
         Export URLs from the database, filtered by the selected domain, to a CSV file.
         """
@@ -267,114 +315,131 @@ class URLManagerGUI(tk.Tk):
                 writer = csv.writer(file)
                 for url in urls:
                     writer.writerow([url])
-            messagebox.showinfo("Export Successful", f"URLs exported to {filename}.")
+            messagebox.showinfo("Export Successful",
+                                f"URLs exported to {filename}.")
         except Exception as e:
             messagebox.showerror("Export Failed", f"An error occurred: {e}")
 
-    def update_vpn_status_display(self)-> None:
+    def update_vpn_status_display(self) -> None:
         """
         Fetches and displays the formatted VPN status along with the current default browser.
         """
         status_info = vpn.get_vpn_status()  # Fetches the VPN status as a dictionary
-    
+
         # Correctly reference the browser's name using self.selected_browser
         browser_info = f"Default Browser: {self.selected_browser}" if self.selected_browser else "No Browser Selected"
 
         if isinstance(status_info, dict):
-            formatted_status = "\n".join(f"{key}: {value}" for key, value in status_info.items())
+            formatted_status = "\n".join(
+                f"{key}: {value}" for key, value in status_info.items())
         else:
             formatted_status = "Unable to fetch VPN status."
-    
+
         combined_status = f"{formatted_status}\n\n{browser_info}"
 
         self.text_vpn_status.config(state='normal')
         self.text_vpn_status.delete('1.0', tk.END)
         self.text_vpn_status.insert(tk.END, combined_status)
         self.text_vpn_status.config(state='disabled')
-        
-    def load_urls(self)-> None:
+
+    def load_urls(self) -> None:
         """
         Function to load the URLs based on weighted sampling without replacement.
         """
-        needed = int(self.entry_needed_urls.get())  #number of URLS required
-        domain = self.domain_var.get() # The current domain
+        needed = int(self.entry_needed_urls.get())  # number of URLS required
+        domain = self.domain_var.get()  # The current domain
 
-        self.loaded_urls = db.weighted_sample_without_replacement_new(self.db_config, needed, domain)
+        self.loaded_urls = db.weighted_sample_without_replacement_new(
+            self.db_config, needed, domain)
 
        # Check if the URL loading preference is 'Most Recent'
         if self.url_loading_preference.get() == "Most Recent":
             # Process each URL in the loaded_urls list
             for i in range(len(self.loaded_urls)):
-                url = self.loaded_urls[i][1]  # Assuming the URL is the second item in each tuple
+                # Assuming the URL is the second item in each tuple
+                url = self.loaded_urls[i][1]
                 # Substitute 'page=xxxxx' with 'page=1'
                 new_url = re.sub(r'page=\d+', 'page=1', url)
-                self.loaded_urls[i] = (self.loaded_urls[i][0], new_url)  # Update the tuple with the new URL
+                # Update the tuple with the new URL
+                self.loaded_urls[i] = (self.loaded_urls[i][0], new_url)
         elif self.url_loading_preference.get() == "Random page":
             for i in range(len(self.loaded_urls)):
                 url = self.loaded_urls[i][1]
                 # Find the page number and replace it with a random number between 1 and the found page number
+
                 def randomize_page(match):
                     page_num = int(match.group(1))
                     if page_num > 1:
                         return f"page={random.randint(1, page_num)}"
                     else:
-                        return match.group(0)  # Return the original if page_num is 1 or less
+                        # Return the original if page_num is 1 or less
+                        return match.group(0)
                 new_url = re.sub(r'page=(\d+)', randomize_page, url)
                 self.loaded_urls[i] = (self.loaded_urls[i][0], new_url)
 
         # Update the display area with the selected URLs
-        self.text_display_urls.config(state='normal')  # Enable the widget for updating
+        # Enable the widget for updating
+        self.text_display_urls.config(state='normal')
         self.text_display_urls.delete('1.0', tk.END)
-        for _, url in sorted(self.loaded_urls, key=lambda x: x[0]):  # Sort by ID
+        # Sort by ID
+        for _, url in sorted(self.loaded_urls, key=lambda x: x[0]):
             self.text_display_urls.insert(tk.END, url + '\n')
-        self.text_display_urls.config(state='disabled')  # Make it read-only again
+        self.text_display_urls.config(
+            state='disabled')  # Make it read-only again
 
-    def update_browser_dropdown(self)-> None:
-        self.browsers = db.get_browsers(self.db_config)  # Assuming this fetches a dict of browsers
+    def update_browser_dropdown(self) -> None:
+        # Assuming this fetches a dict of browsers
+        self.browsers = db.get_browsers(self.db_config)
 
-    def on_browser_selected(self, event=None)-> None:  # Event is passed by bind
+    def on_browser_selected(self, event=None) -> None:  # Event is passed by bind
         # Update the selected browser based on user selection
         self.selected_browser = self.browser_var.get()
         logging.info(f"Selected browser: {self.selected_browser}")
         # Optionally, update VPN status or other elements here
         self.update_vpn_status_display()
 
-    def connect_vpn(self)-> None:
-    # This method will be called when the "Connect VPN" button is clicked
+    def connect_vpn(self) -> None:
+        # This method will be called when the "Connect VPN" button is clicked
         if self.selected_browser:  # Ensure a browser is selected
             try:
                 # Attempt to connect to the VPN
                 if not vpn.connect_vpn(self.selected_browser, self.browsers):
                     logging.critical("Failed to connect to VPN.")
-                    messagebox.showerror("VPN Connection Failed", "Failed to establish a VPN connection. Please check your settings and try again.")
+                    messagebox.showerror(
+                        "VPN Connection Failed", "Failed to establish a VPN connection. Please check your settings and try again.")
                     return  # Exit the function, but don't quit the application
-                messagebox.showinfo("VPN Connection", "VPN successfully connected.")
+                messagebox.showinfo(
+                    "VPN Connection", "VPN successfully connected.")
                 # Optionally, update the VPN status display after connecting
                 self.update_vpn_status_display()
             except Exception as e:
                 messagebox.showerror("VPN Connection Failed", str(e))
         else:
-            messagebox.showwarning("No Browser Selected", "Please select a browser before connecting to the VPN.")
+            messagebox.showwarning(
+                "No Browser Selected", "Please select a browser before connecting to the VPN.")
 
     def execute_open_urls(self) -> None:
         """
         Fetch URLs from the database and open them using the selected browser.
         """
         if not hasattr(self, 'loaded_urls') or not self.loaded_urls:
-            messagebox.showwarning("No URLs Loaded", "Please load URLs before opening.")
+            messagebox.showwarning(
+                "No URLs Loaded", "Please load URLs before opening.")
             return
 
         selected_browser = self.selected_browser
         if not selected_browser:
-            messagebox.showwarning("No Browser Selected", "Please select a browser before opening URLs.")
+            messagebox.showwarning(
+                "No Browser Selected", "Please select a browser before opening URLs.")
             return
 
-        logging.info("execute_open_urls: Fetching URLs...")  
-        #urls = db.get_all_urls(self.db_config)  # Assuming this is how you get all URLs
+        logging.info("execute_open_urls: Fetching URLs...")
+        # urls = db.get_all_urls(self.db_config)  # Assuming this is how you get all URLs
 
         # Use the stored list of URLs for opening
         try:
-            threading.Thread(target=open_urls, args=(self.loaded_urls, selected_browser, self.db_config), daemon=True).start()
+            threading.Thread(target=open_urls, args=(
+                self.loaded_urls, selected_browser, self.db_config), daemon=True).start()
         except Exception as e:
             messagebox.showerror("Error Opening URLs", str(e))
 
@@ -382,34 +447,38 @@ class URLManagerGUI(tk.Tk):
         # Create a new top-level window
         popup = tk.Toplevel(self)
         popup.title("Query URLs")
-        popup.geometry("1000x800")  # Adjust the size as needed
+        popup.geometry("1000x800")
 
         # Domain Entry
         tk.Label(popup, text="Domain:").pack(pady=(10, 0))
         domain_entry = tk.Entry(popup)
         domain_entry.pack(pady=(0, 10))
+        domain_entry.insert(0, self.domain_var.get()) 
 
         # Number of URLs Entry
         tk.Label(popup, text="Number of URLs to return:").pack(pady=(10, 0))
         num_urls_entry = tk.Entry(popup)
         num_urls_entry.pack(pady=(0, 10))
+        num_urls_entry.insert(0, "20") 
 
         # From Date Entry
         tk.Label(popup, text="From Date (YYYY-MM-DD):").pack(pady=(10, 0))
         from_date_entry = tk.Entry(popup)
         from_date_entry.pack(pady=(0, 10))
+        from_date_entry.insert(0, '2023-10-01')
 
         # Query Button
         query_button = tk.Button(popup, text="Query URLs", command=lambda: self.execute_query(
             domain_entry.get(),
             num_urls_entry.get(),
             from_date_entry.get(),
-            popup # Passing popup to display results in this window
+            popup  # Passing popup to display results in this window
         ))
         query_button.pack(pady=(10, 0))
 
         # Results display area with fixed-width font
-        text_display = ScrolledText(popup, wrap=tk.WORD, width=120, height=20, font=('Courier', 10))
+        text_display = ScrolledText(
+            popup, wrap=tk.WORD, width=120, height=20, font=('Courier', 10))
         text_display.pack(pady=(10, 0))
         text_display.config(state='disabled')  # Make it read-only
 
@@ -417,44 +486,65 @@ class URLManagerGUI(tk.Tk):
         self.query_results_display = text_display
 
     def execute_query(self, domain, num_urls, from_date, popup):
-        # Construct your query based on the input parameters
-        # This is a placeholder for the actual database query you'll need to perform
-        # You might need to convert `num_urls` to int and handle potential errors
+        """
+        Form the query for url opening history and pass 
+        the details into db.execute_query()
+        """
         try:
             num_urls_int = int(num_urls)  # Convert num_urls to integer
         except ValueError:
-            messagebox.showerror("Error", "Number of URLs must be an integer", parent=popup)
+            messagebox.showerror(
+                "Error", "Number of URLs must be an integer", parent=popup)
             return
 
         query = """
-        SELECT urls.url, COUNT(URL_open_history.URL_id) AS occurrences
-        FROM URL_open_history
-        JOIN urls ON URL_open_history.URL_id = urls.id
-        WHERE urls.domain = %s AND URL_open_history.timestamp >= %s
-        GROUP BY URL_open_history.URL_id
-        HAVING COUNT(URL_open_history.URL_id) > 1
-        ORDER BY occurrences DESC
+        SELECT  
+            urls.url, 
+            COUNT(URL_open_history.URL_id) AS occurrences
+        FROM 
+            URL_open_history 
+        JOIN 
+            urls 
+        ON 
+            URL_open_history.URL_id = urls.id
+        JOIN 
+            users_urls 
+        ON 
+            urls.id = users_urls.url_id
+        WHERE 
+            urls.domain = %s AND URL_open_history.timestamp >= %s
+        GROUP BY 
+            URL_open_history.URL_id, users_urls.page
+        HAVING 
+            COUNT(URL_open_history.URL_id) > 1
+        ORDER BY 
+            users_urls.page ASC, occurrences DESC
         LIMIT %s
         """
         # Execute the query with your database connection
-        # Assuming `db.execute_query` is a function you'll implement to execute the query
-        results = db.execute_query(self.db_config, query, (domain, from_date, num_urls_int))
+        results = db.execute_query(
+            self.db_config, query, (domain, from_date, num_urls_int))
+
+        print(query)
+        print(results)
 
         # Display the results in the query_results_display Text widget
-        self.query_results_display.config(state='normal')  # Enable widget for update
-        self.query_results_display.delete('1.0', tk.END)  # Clear existing content
+        self.query_results_display.config(
+            state='normal')  # Enable widget for update
+        self.query_results_display.delete(
+            '1.0', tk.END)  # Clear existing content
 
         if results:
             # Calculate the max URL length for formatting, with a minimum width, e.g., 70 characters
             max_url_length = max(len(url) for url, occurrences in results)
             max_url_length = max(max_url_length, 70)
-        
+
             # Header for the columns
             header = f"{'URL'.ljust(max_url_length)}  Count\n"
             divider = f"{'-' * max_url_length}  {'-' * 5}\n"
             self.query_results_display.insert(tk.END, header)
             self.query_results_display.insert(tk.END, divider)
-        
+
             for url, occurrences in results:
                 # Left-align the URL and right-align the count, with padding for alignment
                 line = f"{url.ljust(max_url_length)}  {str(occurrences).rjust(5)}\n"
@@ -462,4 +552,5 @@ class URLManagerGUI(tk.Tk):
         else:
             self.query_results_display.insert(tk.END, "No results found.")
 
-        self.query_results_display.config(state='disabled')  # Make it read-only again
+        self.query_results_display.config(
+            state='disabled')  # Make it read-only again

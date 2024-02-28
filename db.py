@@ -6,19 +6,16 @@ import pandas as pd
 from datetime import datetime
 import logging
 
-def load_database_config(config_file='config.yml') -> str:
+def load_config(config_file='config.yml') -> dict:
     """
-    Load database configuration from a YAML file.
-
-    Args:
-        config_file (str): Path to the configuration file.
+    Load configuration from a YAML file.
 
     Returns:
-        dict: Database configuration parameters.
+        dict: Configuration parameters, including database and GUI settings.
     """
     with open(config_file, 'r') as file:
         config = yaml.safe_load(file)
-    return config['db_config']
+    return config  # Now returns the entire config, not just db_config
 
 def get_browsers(db_config) -> list:
     """
