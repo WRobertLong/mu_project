@@ -2,23 +2,25 @@
 """
 Main program for managing VPN connections and opening URLs.
 
-This script allows the user to connect to a VPN using a selected browser,
+This program allows the user to connect to a VPN using a selected browser,
 processes a list of URLs based on given criteria, and opens those URLs.
 """
 
 import subprocess
 import sys
-import os
+#import os
 import random
 import time
 import logging
-import vpn_manager as vpn
+#import vpn_manager as vpn
 import db
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s', filename='mu_project.log')
 
-db_config: dict = db.load_database_config()
-browsers: dict = db.get_browsers(db_config)
+config = db.load_config()
+db_config = config['db_config']
+gui_config = config.get('gui_config', {})  # Use get to provide a default empty dict if not found
+browsers = db.get_browsers(db_config)
 
 def select_browser() -> None:
     """
@@ -76,7 +78,6 @@ def open_urls(urls_with_ids, selected_browser, db_config) -> None:
         logging.info(f"Resuming at {time.ctime()}")
 
 if __name__ == "__main__":
-    # Check if the user wants to launch the GUI
 
     from gui import URLManagerGUI
 

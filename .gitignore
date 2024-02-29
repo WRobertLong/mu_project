@@ -1,11 +1,12 @@
 # Ignore everything
 *
 
-# But not these files...
+# But don't ignore these...
 !.gitignore
 !mu_project_01.py
 !db.py
 !gui.py
 !vpn_manager.py
 !Requirements.txt
+!gui_open_history_popup.py
 
