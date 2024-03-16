@@ -6,6 +6,13 @@ import pandas as pd
 from datetime import datetime
 import logging
 
+"""
+Module containing functions to commuinicate with the database. Currently using mysql.connector
+
+"""
+
+
+
 def load_config(config_file='config.yml') -> dict:
     """
     Load configuration from a YAML file.

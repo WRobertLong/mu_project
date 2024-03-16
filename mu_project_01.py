@@ -8,11 +8,9 @@ processes a list of URLs based on given criteria, and opens those URLs.
 
 import subprocess
 import sys
-#import os
 import random
 import time
 import logging
-#import vpn_manager as vpn
 import db
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s', filename='mu_project.log')
@@ -72,7 +70,7 @@ def open_urls(urls_with_ids, selected_browser, db_config) -> None:
             logging.error(f"Failed to open URL: {url}. Error: {e}")
             continue
         
-        sleep_time = random.randint(30, 90)
+        sleep_time = random.randint(45, 120)
         logging.info(f"Sleeping for {sleep_time} seconds...")
         time.sleep(sleep_time)
         logging.info(f"Resuming at {time.ctime()}")

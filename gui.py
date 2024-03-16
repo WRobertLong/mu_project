@@ -22,14 +22,15 @@ class URLManagerGUI(tk.Tk):
     #    self.gui_config = config['gui_config']
     #    self.title("URL/VPN Management Console")
     #    self.geometry("1000x1100")
-    #    icon = PhotoImage(
-    #        file='/home/long/google-drive/Documents/Python_things/mu_project/TP_icon.png')
-    #    self.iconphoto(True, icon)
 
     def __init__(self, db_config=None, gui_config=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.db_config = db_config if db_config is not None else {}
         self.gui_config = gui_config if gui_config is not None else {}
+
+        icon = PhotoImage(
+            file='/home/long/google-drive/Documents/Python_things/mu_project/TP_icon.png')
+        self.iconphoto(True, icon)
 
         config = db.load_config() 
         self.db_config = config['db_config']
@@ -150,8 +151,14 @@ class URLManagerGUI(tk.Tk):
         #self.button_open_query_popup = tk.Button(
         #    self, text="URL Query History", command=self.open_query_popup)
         #self.button_open_query_popup.pack(pady=(10, 0))
-        popup_command = partial(gui_open_history_popup.open_query_popup, self)
-        self.query_popup_button = tk.Button(self, text="URL Query History", command=popup_command)    
+        #popup_command = partial(gui_open_history_popup.open_query_popup, self)
+        #self.query_popup_button = tk.Button(self, text="URL Query History", command=popup_command)    
+        
+        # Button to open the URL query popup
+        # Using a lambda function to call open_query_popup with the current instance (self) as argument
+        popup_command = lambda: gui_open_history_popup.open_query_popup(self)
+        self.button_open_query_popup = tk.Button(self, text="URL Query History", command=popup_command)
+        self.button_open_query_popup.pack(pady=(10, 0))
 
     def on_radio_change(self):
         print(
