@@ -5,7 +5,32 @@ import subprocess
 import re
 import logging
 
-def get_vpn_status():
+def query_vpn() -> str:
+    """
+    Run the nordvpn status command and return the result
+    """
+    try:
+        result = subprocess.run(["nordvpn", "status"], capture_output=True, text=True)
+        logging.info("Successfully retrieved VPN status.")
+        return result.stdout
+    except Exception as e:
+        logging.error(f"Error running nordvpn status command: {e}")
+        return ""
+
+def is_vpn_connected() -> bool:
+    """
+    Check if the VPN is connected by looking for 'Connected' in the nordvpn status output
+    """
+    vpn_status = query_vpn()
+    if "Connected" in vpn_status:
+        logging.info("VPN is very likely connected.")
+        return True
+    else:
+        logging.info("VPN is not connected.")
+        return False
+        
+
+def get_vpn_status() -> dict :
     """
     Check the current VPN connection status by verifying running nordvpn status and capturing the result.
 
@@ -14,42 +39,43 @@ def get_vpn_status():
     """
 
     # Run the nordvpn status command
-    result = subprocess.run(["nordvpn", "status"], capture_output=True, text=True)
-    output = result.stdout
+    #result = subprocess.run(["nordvpn", "status"], capture_output=True, text=True)
+    #output = result.stdout
+    vpn_output = query_vpn()
 
     # Check if connected or disconnected
-    if "Disconnected" in output:
+    if "Disconnected" in vpn_output:
         return {"status": "Disconnected"}
-    elif "Connected" in output:
+    elif "Connected" in vpn_output:
         # Parse the output for details
         details = {}
         details["status"] = "Connected"
-        details["hostname"] = re.search("Hostname: (.*)", output).group(1)
-        details["ip"] = re.search("IP: (.*)", output).group(1)
-        details["country"] = re.search("Country: (.*)", output).group(1)
-        details["city"] = re.search("City: (.*)", output).group(1)
+        details["hostname"] = re.search("Hostname: (.*)", vpn_output).group(1)
+        details["ip"] = re.search("IP: (.*)", vpn_output).group(1)
+        details["country"] = re.search("Country: (.*)", vpn_output).group(1)
+        details["city"] = re.search("City: (.*)", vpn_output).group(1)
         
         return details
 
-def check_vpn_status():
+def check_vpn_status() -> bool :   # Do we really need this function ?
     """
     Check the current VPN connection status by verifying the IP address.
 
     Returns:
         bool: True if the VPN is likely connected (IP not in the normal range), False otherwise.
     """
-
-    try:
-        current_ip = get_current_ip()
-        if not current_ip.startswith("176.27"):
-            logging.info("VPN is very likely connected. Current IP: {current_ip}")
-            return True
-        else:
-            logging.info("VPN is not connected or Current IP is in the normal range.")
-            return False
-    except Exception as e:
-        logging.error(f"Error checking VPN status: {e}")
-        return False
+    return is_vpn_connected()
+    #try:
+    #    current_ip = get_current_ip()
+    #    if not current_ip.startswith("176.27"):
+    #        logging.info("VPN is very likely connected. Current IP: {current_ip}")
+    #        return True
+    #    else:
+    #        logging.info("VPN is not connected or Current IP is in the normal range.")
+    #        return False
+    # except Exception as e:
+    #    logging.error(f"Error checking VPN status: {e}")
+    #    return False
 
 def connect_vpn(selected_browser, browsers) -> bool:
     """

@@ -12,6 +12,7 @@ import random
 import time
 import logging
 import db
+import vpn_manager as vpn
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s', filename='mu_project.log')
 
@@ -60,15 +61,17 @@ def open_urls(urls_with_ids, selected_browser, db_config) -> None:
 
     for url_id, url in urls_with_ids_sorted:
         logging.info(f"About to launch {browser_command} with {url}")
-        try:
-            subprocess.Popen([browser_command, url])
-            logging.info(f"Opened URL: {url} at {time.ctime()}")
-            browser_id = browsers[selected_browser]["id"]
-            # Assuming `db` is a module or an instance that has a method `insert_url_open_history`
-            db.insert_url_open_history(url_id, browser_id, db_config)
-        except Exception as e:
-            logging.error(f"Failed to open URL: {url}. Error: {e}")
-            continue
+        if vpn.is_vpn_connected:
+            try:
+                subprocess.Popen([browser_command, url])
+                logging.info(f"Opened URL: {url} at {time.ctime()}")
+                browser_id = browsers[selected_browser]["id"]
+                db.insert_url_open_history(url_id, browser_id, db_config)
+            except Exception as e:
+                logging.error(f"Failed to open URL: {url}. Error: {e}")
+        else:
+            logging.error("VPN is not connected.")
+            continue  
         
         sleep_time = random.randint(45, 120)
         logging.info(f"Sleeping for {sleep_time} seconds...")
