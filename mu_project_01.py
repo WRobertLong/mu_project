@@ -73,7 +73,7 @@ def open_urls(urls_with_ids, selected_browser, db_config) -> None:
             logging.error("VPN is not connected.")
             continue  
         
-        sleep_time = random.randint(45, 150)
+        sleep_time = random.randint(120, 600)
         logging.info(f"Sleeping for {sleep_time} seconds...")
         time.sleep(sleep_time)
         logging.info(f"Resuming at {time.ctime()}")
