@@ -59,6 +59,9 @@ def open_urls(urls_with_ids, selected_browser, db_config) -> None:
 
     browser_command = browsers[selected_browser]["command"]
 
+    # Access sleep_params from the configuration
+    sleep_min, sleep_max = config['main_config']['sleep_params']
+
     for url_id, url in urls_with_ids_sorted:
         logging.info(f"About to launch {browser_command} with {url}")
         if vpn.is_vpn_connected:
@@ -73,7 +76,7 @@ def open_urls(urls_with_ids, selected_browser, db_config) -> None:
             logging.error("VPN is not connected.")
             continue  
         
-        sleep_time = random.randint(45, 120)
+        sleep_time = random.randint(sleep_min, sleep_max)
         logging.info(f"Sleeping for {sleep_time} seconds...")
         time.sleep(sleep_time)
         logging.info(f"Resuming at {time.ctime()}")
