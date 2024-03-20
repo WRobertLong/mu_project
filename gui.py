@@ -66,6 +66,10 @@ class URLManagerGUI(tk.Tk):
         # Update the display to show the VPN status and the selected browser
         self.update_vpn_status_display()
 
+    def get_browsers(self) -> list:#
+        # getter function for browsers
+        return self.browsers
+    
     def setup_file_selection(self) -> None:
         # File Selection
         self.label_file = tk.Label(self, text="No file selected")
@@ -454,7 +458,7 @@ class URLManagerGUI(tk.Tk):
         # Use the stored list of URLs for opening
         try:
             threading.Thread(target=open_urls, args=(
-                self.loaded_urls, selected_browser, self.db_config), daemon=True).start()
+                self, self.loaded_urls, selected_browser, self.db_config), daemon=True).start()
         except Exception as e:
             messagebox.showerror("Error Opening URLs", str(e))
     

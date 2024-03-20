@@ -19,30 +19,30 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %
 config = db.load_config()
 db_config = config['db_config']
 gui_config = config.get('gui_config', {})  # Use get to provide a default empty dict if not found
-browsers = db.get_browsers(db_config)
+# browsers = db.get_browsers(db_config)
 
-def select_browser() -> None:
-    """
-    Present the user with a list of available browsers and allow them to select one.
+#def select_browser() -> None:
+#    """
+#    Present the user with a list of available browsers and allow them to select one.
+#
+#    The browsers are fetched from the database configuration. The user is prompted
+#    to enter the number corresponding to their browser of choice.
+#
+#    Returns:
+#        str: The key name of the selected browser from the available options.##
+#
+#    Exits:
+#        The program exits if the user makes an invalid selection.
+#    """
+#    
+#    choice = int(input("Enter the number of the browser you want to set as default: "))
+#    if 1 <= choice <= len(browsers):
+#        return list(browsers.keys())[choice - 1]
+#    else:
+#        print("Invalid selection.")
+#        sys.exit(1)
 
-    The browsers are fetched from the database configuration. The user is prompted
-    to enter the number corresponding to their browser of choice.
-
-    Returns:
-        str: The key name of the selected browser from the available options.
-
-    Exits:
-        The program exits if the user makes an invalid selection.
-    """
-    
-    choice = int(input("Enter the number of the browser you want to set as default: "))
-    if 1 <= choice <= len(browsers):
-        return list(browsers.keys())[choice - 1]
-    else:
-        print("Invalid selection.")
-        sys.exit(1)
-
-def open_urls(urls_with_ids, selected_browser, db_config) -> None:
+def open_urls(app, urls_with_ids, selected_browser, db_config) -> None:
     """
     Open a list of URLs using the command associated with the selected browser.
 
@@ -56,6 +56,8 @@ def open_urls(urls_with_ids, selected_browser, db_config) -> None:
 
     # Ensure the URLs are sorted by ID before opening
     urls_with_ids_sorted = sorted(urls_with_ids, key=lambda x: x[0])
+
+    browsers = app.get_browsers()
 
     browser_command = browsers[selected_browser]["command"]
 
