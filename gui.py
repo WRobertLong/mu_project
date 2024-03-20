@@ -15,26 +15,26 @@ import gui_open_history_popup
 from functools import partial
 
 class URLManagerGUI(tk.Tk):
-    #def __init__(self, *args, **kwargs) -> None:
-    #    super().__init__(*args, **kwargs)
-    #    config = db.load_config()
-    #    self.db_config = config['db_config']
-    #    self.gui_config = config['gui_config']
-    #    self.title("URL/VPN Management Console")
-    #    self.geometry("1000x1100")
 
     def __init__(self, db_config=None, gui_config=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.db_config = db_config if db_config is not None else {}
         self.gui_config = gui_config if gui_config is not None else {}
 
-        icon = PhotoImage(
-            file='/home/long/google-drive/Documents/Python_things/mu_project/TP_icon.png')
-        self.iconphoto(True, icon)
-
         config = db.load_config() 
         self.db_config = config['db_config']
         gui_config = config['gui_config']
+        self.sleep_params = config['main_config']['sleep_params']
+
+        icon_file = config['main_config']['main_path'] + config['gui_config']['mu_icon']
+        print(icon_file)
+
+        #icon = PhotoImage(
+        #    file='/home/long/google-drive/Documents/Python_things/mu_project/TP_icon.png')
+        #self.iconphoto(True, icon) 
+
+        icon = PhotoImage(file = icon_file)
+        self.iconphoto(True, icon) 
 
         # Load browser configurations from the database
         self.browsers = db.get_browsers(self.db_config)
@@ -69,6 +69,10 @@ class URLManagerGUI(tk.Tk):
     def get_browsers(self) -> list:#
         # getter function for browsers
         return self.browsers
+    
+    def get_sleep_params(self) -> tuple:
+        # getter function for sleep parameters
+        return self.sleep_params
     
     def setup_file_selection(self) -> None:
         # File Selection

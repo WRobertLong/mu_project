@@ -3,7 +3,8 @@
 Main program for managing VPN connections and opening URLs.
 
 This program allows the user to connect to a VPN using a selected browser,
-processes a list of URLs based on given criteria, and opens those URLs.
+processes a list of URLs based on given criteria, and opens those URLs
+one by one, with a random sleept time in between
 """
 
 import subprocess
@@ -16,9 +17,9 @@ import vpn_manager as vpn
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s', filename='mu_project.log')
 
-config = db.load_config()
-db_config = config['db_config']
-gui_config = config.get('gui_config', {})  # Use get to provide a default empty dict if not found
+# config = db.load_config()
+# db_config = config['db_config']
+# gui_config = config.get('gui_config', {})  # Use get to provide a default empty dict if not found
 # browsers = db.get_browsers(db_config)
 
 #def select_browser() -> None:
@@ -62,7 +63,8 @@ def open_urls(app, urls_with_ids, selected_browser, db_config) -> None:
     browser_command = browsers[selected_browser]["command"]
 
     # Access sleep_params from the configuration
-    sleep_min, sleep_max = config['main_config']['sleep_params']
+    # sleep_min, sleep_max = config['main_config']['sleep_params']
+    sleep_min, sleep_max = app.get_sleep_params()
 
     for url_id, url in urls_with_ids_sorted:
         logging.info(f"About to launch {browser_command} with {url}")
