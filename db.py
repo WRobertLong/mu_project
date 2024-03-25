@@ -325,17 +325,32 @@ def execute_query(db_config, query, params):
     :return: List of tuples containing the query results.
     """
     try:
-        # Use the alias 'mysql' directly as imported
         conn = mysql.connect(**db_config)
         cursor = conn.cursor()
         cursor.execute(query, params)
         
         results = cursor.fetchall()
 
-        cursor.close()
-        conn.close()
-
         return results
-    except mysql.Error as error:  # Corrected exception handling using the alias
-        print(f"Failed to execute query: {error}")
-        return None
+    except mysql.connector.InterfaceError as e:
+        logging.error(f"Database connection failed: {e}")
+    except mysql.connector.DataError as e:
+        logging.error(f"Data problem: {e}")
+    except mysql.connector.OperationalError as e:
+        logging.error(f"Operational error: {e}")
+    except mysql.connector.IntegrityError as e:
+        logging.error(f"Integrity issue: {e}")
+    except mysql.connector.InternalError as e:
+        logging.error(f"Internal database error: {e}")
+    except mysql.connector.ProgrammingError as e:
+        logging.error(f"Query programming issue: {e}")
+    except mysql.connector.NotSupportedError as e:
+        logging.error(f"Not supported feature: {e}")
+    except Exception as e:  # Catch-all for non-MySQL related errors
+        logging.error(f"An unexpected error occurred: {e}")
+    finally:
+        if 'cursor' in locals():
+            cursor.close()
+        if 'conn' in locals():
+            conn.close()
+        return None  # Ensure a return value in case of exception

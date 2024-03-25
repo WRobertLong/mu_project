@@ -57,9 +57,11 @@ def get_vpn_status() -> dict :
         
         return details
 
-def check_vpn_status() -> bool :   # Do we really need this function ?
+def check_vpn_status() -> bool :   # We don't actually need this func
     """
-    Check the current VPN connection status by verifying the IP address.
+    Check the current VPN connection status. Originally used IP address range,
+    but this was not reliable. So now simply parsing the output from "vpn status"
+    in  is_vpn_connected()
 
     Returns:
         bool: True if the VPN is likely connected (IP not in the normal range), False otherwise.

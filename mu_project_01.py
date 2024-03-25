@@ -15,35 +15,8 @@ import logging
 import db
 import vpn_manager as vpn
 
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s', filename='mu_project.log')
 
-# config = db.load_config()
-# db_config = config['db_config']
-# gui_config = config.get('gui_config', {})  # Use get to provide a default empty dict if not found
-# browsers = db.get_browsers(db_config)
-
-#def select_browser() -> None:
-#    """
-#    Present the user with a list of available browsers and allow them to select one.
-#
-#    The browsers are fetched from the database configuration. The user is prompted
-#    to enter the number corresponding to their browser of choice.
-#
-#    Returns:
-#        str: The key name of the selected browser from the available options.##
-#
-#    Exits:
-#        The program exits if the user makes an invalid selection.
-#    """
-#    
-#    choice = int(input("Enter the number of the browser you want to set as default: "))
-#    if 1 <= choice <= len(browsers):
-#        return list(browsers.keys())[choice - 1]
-#    else:
-#        print("Invalid selection.")
-#        sys.exit(1)
-
-def open_urls(app, urls_with_ids, selected_browser, db_config) -> None:
+def open_urls(app, urls_with_ids, selected_browser, db_config) -> None:    # Should move this func
     """
     Open a list of URLs using the command associated with the selected browser.
 
@@ -62,8 +35,6 @@ def open_urls(app, urls_with_ids, selected_browser, db_config) -> None:
 
     browser_command = browsers[selected_browser]["command"]
 
-    # Access sleep_params from the configuration
-    # sleep_min, sleep_max = config['main_config']['sleep_params']
     sleep_min, sleep_max = app.get_sleep_params()
 
     for url_id, url in urls_with_ids_sorted:

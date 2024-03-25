@@ -21,13 +21,23 @@ class URLManagerGUI(tk.Tk):
         self.db_config = db_config if db_config is not None else {}
         self.gui_config = gui_config if gui_config is not None else {}
 
-        config = db.load_config() 
+        config = db.load_config()
+        
+        # Set up logging
+        log_filename = config.get('main_config', {}).get('log_filename', 'default.log')
+        log_path = config.get('main_config', {}).get('main_path', './') + log_filename
+
+        # Setup logging with dynamic configuration
+        logging.basicConfig(level=logging.DEBUG,
+                            format='%(asctime)s - %(levelname)s - %(message)s',
+                            filename=log_path)
+
+
         self.db_config = config['db_config']
         gui_config = config['gui_config']
         self.sleep_params = config['main_config']['sleep_params']
 
         icon_file = config['main_config']['main_path'] + config['gui_config']['mu_icon']
-        print(icon_file)
 
         #icon = PhotoImage(
         #    file='/home/long/google-drive/Documents/Python_things/mu_project/TP_icon.png')
@@ -314,9 +324,7 @@ class URLManagerGUI(tk.Tk):
             messagebox.showerror(
                 "Database Error", f"An error occurred while trying to clear URLs: {e}")
         finally:
-            # This block will run whether the try block succeeds or an exception is caught
-            # Use this area for cleanup actions or final steps you need to take
-            pass  # Replace this with any final steps you need to take
+            pass 
 
     def export_to_csv(self) -> None:
         """
@@ -457,7 +465,6 @@ class URLManagerGUI(tk.Tk):
             return
 
         logging.info("execute_open_urls: Fetching URLs...")
-        # urls = db.get_all_urls(self.db_config)  # Assuming this is how you get all URLs
 
         # Use the stored list of URLs for opening
         try:
