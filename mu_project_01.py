@@ -7,6 +7,7 @@ processes a list of URLs based on given criteria, and opens those URLs
 one by one, with a random sleept time in between
 """
 
+from __future__ import annotations
 import subprocess
 import sys
 import random
@@ -14,9 +15,11 @@ import time
 import logging
 import db
 import vpn_manager as vpn
+from typing import List, Tuple, Union, Dict
 
 
-def open_urls(app, urls_with_ids, selected_browser, db_config) -> None:    # Should move this func
+def open_urls(app: 'URLManagerGUI', urls_with_ids: List[Tuple[Union[int, str], str]], selected_browser: str, db_config: Dict[str, Union[str, int, float, bool]]) -> None:
+    # Use forward declaration for app type to avoid circular dependencies
     """
     Open a list of URLs using the command associated with the selected browser.
 
