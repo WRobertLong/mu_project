@@ -2,9 +2,6 @@
 """
 Main program for managing VPN connections and opening URLs.
 
-This program allows the user to connect to a VPN using a selected browser,
-processes a list of URLs based on given criteria, and opens those URLs
-one by one, with a random sleept time in between
 """
 
 from __future__ import annotations
