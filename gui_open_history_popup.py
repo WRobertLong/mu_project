@@ -3,14 +3,14 @@
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox, PhotoImage
 from tkinter.scrolledtext import ScrolledText
-from mu_project_01 import open_urls
-import csv
+#from gui import open_urls
+#import csv
 import db
-import re
-import random
-import vpn_manager as vpn
-import threading
-import logging
+#import re
+#import random
+#import vpn_manager as vpn 
+#import threading
+#import logging
 import mysql.connector as mysql
 
 def open_query_popup(gui_instance):

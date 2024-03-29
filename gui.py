@@ -2,7 +2,6 @@
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox, PhotoImage
 from tkinter.scrolledtext import ScrolledText
-from mu_project_01 import open_urls
 import csv
 import db
 import re
@@ -13,6 +12,10 @@ import logging
 import mysql.connector as mysql
 import gui_open_history_popup
 from functools import partial
+from typing import List, Tuple, Union, Dict
+#import time
+#import subprocess
+from utils import open_urls
 
 class URLManagerGUI(tk.Tk):
 
@@ -472,5 +475,7 @@ class URLManagerGUI(tk.Tk):
                 self, self.loaded_urls, selected_browser, self.db_config), daemon=True).start()
         except Exception as e:
             messagebox.showerror("Error Opening URLs", str(e))
+
+
     
     
