@@ -324,13 +324,15 @@ def execute_query(db_config, query, params):
     :param params: Tuple of parameters to be used with the query.
     :return: List of tuples containing the query results.
     """
+
+    print(query)
+    print(params)
+
     try:
         conn = mysql.connect(**db_config)
         cursor = conn.cursor()
         cursor.execute(query, params)
-        
         results = cursor.fetchall()
-
         return results
     except mysql.connector.InterfaceError as e:
         logging.error(f"Database connection failed: {e}")
@@ -353,4 +355,4 @@ def execute_query(db_config, query, params):
             cursor.close()
         if 'conn' in locals():
             conn.close()
-        return None  # Ensure a return value in case of exception
+    return results
