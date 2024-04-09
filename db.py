@@ -277,7 +277,7 @@ def expand_df(df):
 
 def insert_url_open_history(url_id, browser_id, db_config) -> None:
     """
-    Inserts a record into the URL_open_history table.
+    Inserts a record into the URL_open_history table as a parameterised query.
 
     Args:
     url_id (int): The ID of the URL that was opened.
