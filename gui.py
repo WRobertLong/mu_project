@@ -42,10 +42,6 @@ class URLManagerGUI(tk.Tk):
 
         icon_file = config['main_config']['main_path'] + config['gui_config']['mu_icon']
 
-        #icon = PhotoImage(
-        #    file='/home/long/google-drive/Documents/Python_things/mu_project/TP_icon.png')
-        #self.iconphoto(True, icon) 
-
         icon = PhotoImage(file = icon_file)
         self.iconphoto(True, icon) 
 
