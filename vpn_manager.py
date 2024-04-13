@@ -102,6 +102,22 @@ def connect_vpn(selected_browser, browsers) -> bool:
         return True
     
 
+def disconnect_vpn() -> bool:
+    """
+    Disconnect from the VPN
+
+    Returns:
+        bool: True if the VPN disconnection was successfully established, False otherwise.
+    """
+
+    # Attempt to disconnect the vpn
+    if not close_vpn_connection():
+        logging.error(f"Failed to discconnect from VPN server.")
+        return False
+    else:
+        return True
+
+
 def attempt_vpn_rotation(settings, retries=5) -> bool:
     """
     Attempts to rotate the VPN connection with retry logic.

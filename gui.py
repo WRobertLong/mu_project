@@ -134,6 +134,11 @@ class URLManagerGUI(tk.Tk):
             top_frame, text="Connect VPN", command=self.connect_vpn)
         button_connect_vpn.pack(side=tk.LEFT, padx=(0, 10))
 
+        # Disconnect VPN Button
+        button_disconnect_vpn = tk.Button(
+            top_frame, text="Connect VPN", command=self.disconnect_vpn)
+        button_connect_vpn.pack(side=tk.LEFT, padx=(0, 10))
+
         # Check VPN Status Button
         button_check_vpn = tk.Button(
             top_frame, text="Check VPN Status", command=self.update_vpn_status_display)
@@ -165,14 +170,6 @@ class URLManagerGUI(tk.Tk):
 
     def setup_query_popup_button(self) -> None:
         # Button to open the URL query popup
-        #self.button_open_query_popup = tk.Button(
-        #    self, text="URL Query History", command=self.open_query_popup)
-        #self.button_open_query_popup.pack(pady=(10, 0))
-        #popup_command = partial(gui_open_history_popup.open_query_popup, self)
-        #self.query_popup_button = tk.Button(self, text="URL Query History", command=popup_command)    
-        
-        # Button to open the URL query popup
-        # Using a lambda function to call open_query_popup with the current instance (self) as argument
         popup_command = lambda: gui_open_history_popup.open_query_popup(self)
         self.button_open_query_popup = tk.Button(self, text="URL Query History", command=popup_command)
         self.button_open_query_popup.pack(pady=(10, 0))
@@ -429,7 +426,6 @@ class URLManagerGUI(tk.Tk):
         self.update_vpn_status_display()
 
     def connect_vpn(self) -> None:
-        # This method will be called when the "Connect VPN" button is clicked
         if self.selected_browser:  # Ensure a browser is selected
             try:
                 # Attempt to connect to the VPN
@@ -447,6 +443,24 @@ class URLManagerGUI(tk.Tk):
         else:
             messagebox.showwarning(
                 "No Browser Selected", "Please select a browser before connecting to the VPN.")
+
+    def disconnect_vpn(self) -> None:
+
+        print('Hello orcs, hobbits and other strange objects, from inside gui.disconnect_vpn() ')
+        try:
+        # Attempt to disconnect from the VPN
+            if not vpn.disconnect_vpn():
+                logging.critical("Failed to disconnect to VPN.")
+                messagebox.showerror(
+                    "VPN Disconnection Failed")
+                return  # Exit the function, but don't quit the application
+            messagebox.showinfo(
+                "VPN Connection", "VPN successfully disconnected.")
+            self.update_vpn_status_display()
+        except Exception as e:
+            messagebox.showerror("VPN Disconnection Failed", str(e))
+
+
 
     def execute_open_urls(self) -> None:
         """
