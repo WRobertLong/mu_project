@@ -136,8 +136,8 @@ class URLManagerGUI(tk.Tk):
 
         # Disconnect VPN Button
         button_disconnect_vpn = tk.Button(
-            top_frame, text="Connect VPN", command=self.disconnect_vpn)
-        button_connect_vpn.pack(side=tk.LEFT, padx=(0, 10))
+            top_frame, text="Disconnect VPN", command=self.disconnect_vpn)
+        button_disconnect_vpn.pack(side=tk.LEFT, padx=(0, 10))
 
         # Check VPN Status Button
         button_check_vpn = tk.Button(
@@ -276,7 +276,21 @@ class URLManagerGUI(tk.Tk):
         domain = self.entry_domain.get()
         if not url:
             messagebox.showwarning("Missing Information",
-                                   "Please enter a URL.")
+                                   "Please enter a URL.")    
+    
+    def disconnect_vpn(self) -> None:
+        try:
+        # Attempt to disconnect from the VPN
+            if not vpn.disconnect_vpn():
+                logging.critical("Failed to disconnect to VPN.")
+                messagebox.showerror(
+                    "VPN Disconnection Failed")
+                return  # Exit the function, but don't quit the application
+            messagebox.showinfo(
+                "VPN Connection", "VPN successfully disconnected.")
+            self.update_vpn_status_display()
+        except Exception as e:
+            messagebox.showerror("VPN Disconnection Failed", str(e))
             return
         # Assuming URL validation is desired; simplistic check:
         if not url.startswith('http://') and not url.startswith('https://'):
@@ -446,7 +460,6 @@ class URLManagerGUI(tk.Tk):
 
     def disconnect_vpn(self) -> None:
 
-        print('Hello orcs, hobbits and other strange objects, from inside gui.disconnect_vpn() ')
         try:
         # Attempt to disconnect from the VPN
             if not vpn.disconnect_vpn():
@@ -459,8 +472,6 @@ class URLManagerGUI(tk.Tk):
             self.update_vpn_status_display()
         except Exception as e:
             messagebox.showerror("VPN Disconnection Failed", str(e))
-
-
 
     def execute_open_urls(self) -> None:
         """
