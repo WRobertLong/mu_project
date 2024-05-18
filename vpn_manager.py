@@ -1,5 +1,7 @@
 # vpn.py
-from nordvpn_connect import initialize_vpn, rotate_VPN, close_vpn_connection, get_current_ip
+#from nordvpn_connect import initialize_vpn, rotate_VPN, close_vpn_connection, get_current_ip
+import  nordvpn_connect
+from tkinter import messagebox
 import sys
 import subprocess
 import re
@@ -110,12 +112,31 @@ def disconnect_vpn() -> bool:
         bool: True if the VPN disconnection was successfully established, False otherwise.
     """
 
-    # Attempt to disconnect the vpn
-    if not close_vpn_connection():
-        logging.error(f"Failed to discconnect from VPN server.")
-        return False
-    else:
-        return True
+    # Define the parameters dictionary, including the required 'platform' key
+    parameters = {
+        "platform": "linux",  # Adjust according to your operating system (e.g., "windows" or "macos")
+        # Include other required parameters if applicable
+    }
+
+    try:
+        # Attempt to close the VPN connection
+        result = nordvpn_connect.close_vpn_connection(parameters)
+
+        if result is None:
+            messagebox.showinfo("VPN Connection", "VPN successfully disconnected.")
+        else:
+            messagebox.showerror("VPN Disconnection Failed", "Unexpected output during disconnection.")
+        
+        # Optionally, update the VPN status display or application state
+            #self.update_vpn_status_display()
+
+    except KeyError as e:
+        logging.error("Missing key in parameters during VPN disconnection", exc_info=e)
+        messagebox.showerror("VPN Disconnection Error", f"Missing key in parameters: {e}")
+
+    except Exception as e:
+        logging.critical("Unexpected error during VPN disconnection", exc_info=e)
+        messagebox.showerror("VPN Disconnection Failed", f"An unexpected error occurred: {str(e)}")
 
 
 def attempt_vpn_rotation(settings, retries=5) -> bool:
@@ -139,7 +160,7 @@ def attempt_vpn_rotation(settings, retries=5) -> bool:
                 if attempt > 0:
                     print(f"Successfully connected to VPN after {attempt} retries.")
                 else:
-                    print("Successfully connected to VPN.")
+                    print("Successfully connected to VPN. Whoa !")
                 return True
             else:
                 print("Not connected to vpn \n")

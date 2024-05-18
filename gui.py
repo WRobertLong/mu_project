@@ -277,33 +277,6 @@ class URLManagerGUI(tk.Tk):
         if not url:
             messagebox.showwarning("Missing Information",
                                    "Please enter a URL.")    
-    
-    def disconnect_vpn(self) -> None:
-        try:
-        # Attempt to disconnect from the VPN
-            if not vpn.disconnect_vpn():
-                logging.critical("Failed to disconnect to VPN.")
-                messagebox.showerror(
-                    "VPN Disconnection Failed")
-                return  # Exit the function, but don't quit the application
-            messagebox.showinfo(
-                "VPN Connection", "VPN successfully disconnected.")
-            self.update_vpn_status_display()
-        except Exception as e:
-            messagebox.showerror("VPN Disconnection Failed", str(e))
-            return
-        # Assuming URL validation is desired; simplistic check:
-        if not url.startswith('http://') and not url.startswith('https://'):
-            messagebox.showwarning(
-                "Invalid URL", "URL must start with http:// or https://")
-            return
-        try:
-            db.insert_url(self.db_config, url, domain)
-            messagebox.showinfo("Success", "URL has been uploaded.")
-            # Clear the URL entry after successful upload
-            self.entry_url.delete(0, tk.END)
-        except Exception as e:
-            messagebox.showerror("Error", f"Failed to upload URL: {e}")
 
     def clear_urls(self) -> None:
         """
@@ -449,7 +422,7 @@ class URLManagerGUI(tk.Tk):
                         "VPN Connection Failed", "Failed to establish a VPN connection. Please check your settings and try again.")
                     return  # Exit the function, but don't quit the application
                 messagebox.showinfo(
-                    "VPN Connection", "VPN successfully connected.")
+                    "VPN Connection", "VPN successfully connected")
                 # Optionally, update the VPN status display after connecting
                 self.update_vpn_status_display()
             except Exception as e:
@@ -459,16 +432,13 @@ class URLManagerGUI(tk.Tk):
                 "No Browser Selected", "Please select a browser before connecting to the VPN.")
 
     def disconnect_vpn(self) -> None:
-
         try:
-        # Attempt to disconnect from the VPN
-            if not vpn.disconnect_vpn():
-                logging.critical("Failed to disconnect to VPN.")
-                messagebox.showerror(
-                    "VPN Disconnection Failed")
+            # Attempt to close the VPN connection
+            if not close_vpn_connection():
+                logging.critical("Failed to disconnect VPN.")
+                messagebox.showerror("VPN Disconnection Failed", "Unable to disconnect from the VPN.")
                 return  # Exit the function, but don't quit the application
-            messagebox.showinfo(
-                "VPN Connection", "VPN successfully disconnected.")
+            messagebox.showinfo("VPN Connection", "VPN successfully disconnected.")
             self.update_vpn_status_display()
         except Exception as e:
             messagebox.showerror("VPN Disconnection Failed", str(e))
