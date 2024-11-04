@@ -1,4 +1,4 @@
-#db.py
+# db.py
 import mysql.connector as mysql
 import yaml
 import numpy as np
@@ -12,6 +12,33 @@ Module containing functions to commuinicate with the database. Currently using m
 """
 
 
+def get_domain_from_url(url, db_config):
+    """
+    Retrieves the domain code from the database, based on a pattern match from the URL.
+
+    Args:
+        url (str): The URL to check.
+        db_config (dict): Database configuration.
+
+    Returns:
+        str: The domain code if a match is found, or None if no match.
+    """
+    # Connect to the database
+    conn = mysql.connect(**db_config)
+    cursor = conn.cursor()
+
+    # Query to check for a matching pattern in the `domains` table,
+    # preventing an SQL injection attack.
+    query = "SELECT domain FROM domains WHERE %s LIKE CONCAT('%%', pattern, '%%') LIMIT 1;"
+    cursor.execute(query, (url,))
+    result = cursor.fetchone()
+
+    # Clean up and close connection
+    cursor.close()
+    conn.close()
+
+    return result[0] if result else None
+
 
 def load_config(config_file='config.yml') -> dict:
     """
@@ -23,6 +50,7 @@ def load_config(config_file='config.yml') -> dict:
     with open(config_file, 'r') as file:
         config = yaml.safe_load(file)
     return config  # Now returns the entire config, not just db_config
+
 
 def get_browsers(db_config) -> list:
     """
@@ -40,12 +68,14 @@ def get_browsers(db_config) -> list:
         cursor = conn.cursor()
         cursor.execute("SELECT id, name, vpn_code, command FROM browsers")
         for (id, name, vpn_code, command) in cursor:
-            browsers_dict[name] = {"id": id, "vpn": vpn_code, "command": command}
+            browsers_dict[name] = {
+                "id": id, "vpn": vpn_code, "command": command}
     finally:
         if conn.is_connected():
             cursor.close()
             conn.close()
     return browsers_dict
+
 
 def get_all_urls(db_config, domain=None) -> list:
     """
@@ -67,12 +97,13 @@ def get_all_urls(db_config, domain=None) -> list:
         params = (domain,)
     cursor.execute(query, params)
     urls = [item[0] for item in cursor.fetchall()]
-    
+
     cursor.close()
     conn.close()
     return urls
 
-def insert_url(db_config, url, domain) -> None:
+
+def insert_url(db_config, url, domain, weight) -> None:
     """
     Insert a new URL into the database.
 
@@ -85,8 +116,14 @@ def insert_url(db_config, url, domain) -> None:
     try:
         conn = mysql.connect(**db_config)
         cursor = conn.cursor()
-        query = "INSERT INTO urls (url, domain) VALUES (%s, %s) ON DUPLICATE KEY UPDATE url=url;"
-        cursor.execute(query, (url, domain))
+        # query = "INSERT INTO urls (url, domain) VALUES (%s, %s) ON DUPLICATE KEY UPDATE url=url;"
+        query = """
+        INSERT INTO urls (url, domain, weight)
+        VALUES (%s, %s, %s)
+        ON DUPLICATE KEY UPDATE url=url;
+        """
+
+        cursor.execute(query, (url, domain, weight))
         conn.commit()
     except mysql.IntegrityError as e:
         logging.error(f"Integrity error inserting URL: {url}. Error: {e}")
@@ -101,6 +138,7 @@ def insert_url(db_config, url, domain) -> None:
         if conn.is_connected():
             cursor.close()
             conn.close()
+
 
 def upload_urls_from_file(db_config, filename, domain) -> int:
     """
@@ -122,6 +160,7 @@ def upload_urls_from_file(db_config, filename, domain) -> int:
             count += 1
     return count  # Return the number of URLs uploaded
 
+
 def clear_all_urls(db_config) -> None:
     """
     Delete all URLs from the database.
@@ -140,24 +179,26 @@ def clear_all_urls(db_config) -> None:
             cursor.close()
             conn.close()
 
+
 def get_domains(db_config) -> tuple:
-   
+
     conn = mysql.connect(**db_config)
     cursor = conn.cursor()
     cursor.execute("SELECT domain, default_domain FROM domains")
     domains = cursor.fetchall()
-    
+
     default_domain = None
     domain_list = []
     for domain, is_default in domains:
         domain_list.append(domain)
         if is_default:
             default_domain = domain
-            
+
     cursor.close()
     conn.close()
-    
+
     return domain_list, default_domain
+
 
 def insert_into_urls_opened(db_config, url_id) -> bool:
     """
@@ -220,16 +261,18 @@ def weighted_sample_without_replacement(db_config, needed, domain) -> list:
 
     # Separate IDs, URLs, and weights
     ids, urls, weights = zip(*urls_data)
-    
+
     # Convert weights to probabilities, ensuring they sum to 1
     total_weight = sum(weights)
     probabilities = [weight / total_weight for weight in weights]
 
     # Sample URLs based on their weights without replacement
-    sampled_indices = np.random.choice(len(urls), size=needed, replace=False, p=probabilities)
+    sampled_indices = np.random.choice(
+        len(urls), size=needed, replace=False, p=probabilities)
     sampled_urls_with_ids = [(ids[i], urls[i]) for i in sampled_indices]
 
     return sampled_urls_with_ids
+
 
 def weighted_sample_without_replacement_new(db_config, needed, domain) -> list:
     try:
@@ -259,10 +302,11 @@ def weighted_sample_without_replacement_new(db_config, needed, domain) -> list:
     # Return a list of tuples (id, url)
     return list(zip(random_rows['id'], random_rows['url']))
 
+
 def expand_df(df):
     # Create an empty list to store each block of replicated rows
     replicated_blocks = []
-    
+
     # Iterate over each row in the DataFrame
     for index, row in df.iterrows():
         replicated_block = pd.DataFrame({
@@ -270,10 +314,11 @@ def expand_df(df):
             'url': [row['url']] * row['weight']  # Replicate the url
         })
         replicated_blocks.append(replicated_block)
-    
+
     # Concatenate all replicated blocks to a single DataFrame
     expanded_df = pd.concat(replicated_blocks, ignore_index=True)
     return expanded_df
+
 
 def insert_url_open_history(url_id, browser_id, db_config) -> None:
     """
@@ -314,6 +359,7 @@ def insert_url_open_history(url_id, browser_id, db_config) -> None:
             cursor.close()
         if conn:
             conn.close()
+
 
 def execute_query(db_config, query, params):
     """

@@ -13,9 +13,10 @@ import mysql.connector as mysql
 import gui_open_history_popup
 from functools import partial
 from typing import List, Tuple, Union, Dict
-#import time
-#import subprocess
+# import time
+# import subprocess
 from utils import open_urls
+
 
 class URLManagerGUI(tk.Tk):
 
@@ -25,25 +26,27 @@ class URLManagerGUI(tk.Tk):
         self.gui_config = gui_config if gui_config is not None else {}
 
         config = db.load_config()
-        
+
         # Set up logging
-        log_filename = config.get('main_config', {}).get('log_filename', 'default.log')
-        log_path = config.get('main_config', {}).get('main_path', './') + log_filename
+        log_filename = config.get('main_config', {}).get(
+            'log_filename', 'default.log')
+        log_path = config.get('main_config', {}).get(
+            'main_path', './') + log_filename
 
         # Setup logging with dynamic configuration
         logging.basicConfig(level=logging.DEBUG,
                             format='%(asctime)s - %(levelname)s - %(message)s',
                             filename=log_path)
 
-
         self.db_config = config['db_config']
         gui_config = config['gui_config']
         self.sleep_params = config['main_config']['sleep_params']
 
-        icon_file = config['main_config']['main_path'] + config['gui_config']['mu_icon']
+        icon_file = config['main_config']['main_path'] + \
+            config['gui_config']['mu_icon']
 
-        icon = PhotoImage(file = icon_file)
-        self.iconphoto(True, icon) 
+        icon = PhotoImage(file=icon_file)
+        self.iconphoto(True, icon)
 
         # Load browser configurations from the database
         self.browsers = db.get_browsers(self.db_config)
@@ -75,14 +78,14 @@ class URLManagerGUI(tk.Tk):
         # Update the display to show the VPN status and the selected browser
         self.update_vpn_status_display()
 
-    def get_browsers(self) -> list:#
+    def get_browsers(self) -> list:
         # getter function for browsers
         return self.browsers
-    
+
     def get_sleep_params(self) -> tuple:
         # getter function for sleep parameters
         return self.sleep_params
-    
+
     def setup_file_selection(self) -> None:
         # File Selection
         self.label_file = tk.Label(self, text="No file selected")
@@ -95,14 +98,30 @@ class URLManagerGUI(tk.Tk):
         self.button_upload.pack(pady=(10, 0))
 
     def setup_url_entry(self) -> None:
-        # Additional URL Entry
-        self.label_url = tk.Label(self, text="URL:")
-        self.label_url.pack(pady=(10, 0))
-        self.entry_url = tk.Entry(self)
-        self.entry_url.pack(pady=(0, 10))
+        # Frame for URL and Weight (side-by-side)
+        url_weight_frame = tk.Frame(self)
+        url_weight_frame.pack(pady=(10, 0))
+
+        # URL Label and Entry (wider)
+        self.label_url = tk.Label(url_weight_frame, text="URL:")
+        self.label_url.pack(side=tk.LEFT)
+        # Adjust width as needed
+        self.entry_url = tk.Entry(url_weight_frame, width=50)
+        self.entry_url.pack(side=tk.LEFT, padx=(5, 10))
+
+        # Weight Label and Entry (narrower)
+        self.label_weight = tk.Label(
+            url_weight_frame, text="Weight (optional):")
+        self.label_weight.pack(side=tk.LEFT)
+        self.entry_weight = tk.Entry(
+            url_weight_frame, width=5)  # Adjust width as needed
+        self.entry_weight.pack(side=tk.LEFT, padx=(5, 10))
+
+        # Upload and Clear Buttons (below URL and Weight frame)
         self.button_upload_single = tk.Button(
             self, text="Upload Single URL", command=self.upload_single_url)
         self.button_upload_single.pack(pady=(10, 0))
+
         self.button_clear = tk.Button(
             self, text="Clear All URLs", command=self.clear_urls)
         self.button_clear.pack(pady=(10, 0))
@@ -170,8 +189,9 @@ class URLManagerGUI(tk.Tk):
 
     def setup_query_popup_button(self) -> None:
         # Button to open the URL query popup
-        popup_command = lambda: gui_open_history_popup.open_query_popup(self)
-        self.button_open_query_popup = tk.Button(self, text="URL Query History", command=popup_command)
+        def popup_command(): return gui_open_history_popup.open_query_popup(self)
+        self.button_open_query_popup = tk.Button(
+            self, text="URL Query History", command=popup_command)
         self.button_open_query_popup.pack(pady=(10, 0))
 
     def on_radio_change(self):
@@ -268,15 +288,62 @@ class URLManagerGUI(tk.Tk):
             messagebox.showwarning("Missing Information",
                                    "Please select a file and enter a domain.")
 
+    def infer_domain(self, url: str) -> str:
+        domain = db.get_domain_from_url(url, self.db_config)
+        if not domain:
+            raise ValueError("Domain pattern not recognized in URL.")
+        return domain
+
+    def infer_weight(self, url: str) -> int:
+        """
+        Infer the weight based on the page number in the URL.
+        Raises an error if 'page=' is not found.
+        """
+        # Use regex to find the page number after 'page=' in the URL
+        page_match = re.search(r'page=(\d+)', url)
+        if not page_match:
+            raise ValueError("The URL is missing 'page=' parameter.")
+
+        # Convert the matched page number to an integer
+        page_number = int(page_match.group(1))
+
+        # Determine weight based on page number
+        if page_number <= 10:
+            return 1
+        elif page_number <= 20:
+            return 2
+        elif page_number <= 50:
+            return 3
+        elif page_number <= 100:
+            return 4
+        else:
+            return 5
+
     def upload_single_url(self) -> None:
-        """
-        Upload a single URL, entered in the text entry field, to the database under the selected domain.
-        """
-        url = self.entry_url.get()
-        domain = self.entry_domain.get()
-        if not url:
-            messagebox.showwarning("Missing Information",
-                                   "Please enter a URL.")    
+
+        url = self.entry_url.get().strip()
+        domain = self.infer_domain(url)
+
+        if not domain:
+            messagebox.showwarning(
+                "Domain Not Recognised", "The URL does not match any recognised domain.")
+            return
+
+        try:
+            # Infer weight based on page number
+            weight = self.infer_weight(url)
+
+            # Insert URL with inferred domain and weight into the database
+            db.insert_url(self.db_config, url, domain, weight)
+            messagebox.showinfo(
+                "Upload Successful", f"URL '{url}' has been uploaded to domain '{domain}' with weight {weight}.")
+            # Clear the entry after successful upload
+            self.entry_url.delete(0, tk.END)
+        except ValueError as e:
+            # Display error if 'page=' is missing
+            messagebox.showwarning("Invalid URL", str(e))
+        except mysql.Error as e:
+            messagebox.showerror("Upload Failed", f"An error occurred: {e}")
 
     def clear_urls(self) -> None:
         """
@@ -307,7 +374,7 @@ class URLManagerGUI(tk.Tk):
             messagebox.showerror(
                 "Database Error", f"An error occurred while trying to clear URLs: {e}")
         finally:
-            pass 
+            pass
 
     def export_to_csv(self) -> None:
         """
@@ -436,9 +503,11 @@ class URLManagerGUI(tk.Tk):
             # Attempt to close the VPN connection
             if not close_vpn_connection():
                 logging.critical("Failed to disconnect VPN.")
-                messagebox.showerror("VPN Disconnection Failed", "Unable to disconnect from the VPN.")
+                messagebox.showerror(
+                    "VPN Disconnection Failed", "Unable to disconnect from the VPN.")
                 return  # Exit the function, but don't quit the application
-            messagebox.showinfo("VPN Connection", "VPN successfully disconnected.")
+            messagebox.showinfo(
+                "VPN Connection", "VPN successfully disconnected.")
             self.update_vpn_status_display()
         except Exception as e:
             messagebox.showerror("VPN Disconnection Failed", str(e))
@@ -467,13 +536,11 @@ class URLManagerGUI(tk.Tk):
         except Exception as e:
             messagebox.showerror("Error Opening URLs", str(e))
 
-    
     def execute_query(gui_instance, domain, num_urls, from_date, popup):
         """
         Form the query for url opening history and pass 
         the details into db.execute_query()
         """
-
 
         try:
             num_urls_int = int(num_urls)  # Convert num_urls to integer
@@ -506,7 +573,7 @@ class URLManagerGUI(tk.Tk):
             users_urls.page ASC, occurrences DESC
         LIMIT %s
         """
-        
+
         # Execute the query with your database connection
         results = db.execute_query(
             gui_instance.db_config, query, (domain, from_date, num_urls_int))
@@ -516,7 +583,7 @@ class URLManagerGUI(tk.Tk):
             state='normal')  # Enable widget for update
         gui_instance.query_results_display.delete(
             '1.0', tk.END)  # Clear existing content
-    
+
         if results:
             # Calculate the max URL length for formatting, with a minimum width, e.g., 70 characters
             max_url_length = max(len(url) for url, occurrences in results)
@@ -532,11 +599,8 @@ class URLManagerGUI(tk.Tk):
                 line = f"{url.ljust(max_url_length)}  {str(occurrences).rjust(5)}\n"
                 gui_instance.query_results_display.insert(tk.END, line)
             else:
-                gui_instance.query_results_display.insert(tk.END, "No results found.")
+                gui_instance.query_results_display.insert(
+                    tk.END, "No results found.")
 
             gui_instance.query_results_display.config(
-            state='disabled')  # Make it read-only again
-
-
-    
-    
+                state='disabled')  # Make it read-only again
